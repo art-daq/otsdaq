@@ -2238,6 +2238,7 @@ launchOTS() {
 
 							#cleanup alive files
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null #hide output #remove alive file
+							rm -f ${SERVICE_DATA_PATH}/GatewayUDPRemoteControl.dat #rewritten by the Gateway at startup (printGatewayUDPRemoteControl)
 
 							if [ $ISREMOTE == 1 ]; then
 								# A remote-launched script does not run the gateway-driven stale-script
@@ -5363,6 +5364,28 @@ otsDataDiskCheck() {
 # Log rollover is also handled.
 mkdir -p tmp
 ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
+# Gateway UDP Remote Control (FSM commands and status queries): unlike the MacroMaker and
+# ConfigurationGUI remote controls it is enabled in the Context group (GatewaySupervisorTable),
+# not by env vars, so the Gateway writes its address to ServiceData/GatewayUDPRemoteControl.dat once its socket is
+# bound ("<ip> <port> <fsmCommandsEnabled>") or "disabled". $1 = seconds to wait for the file.
+printGatewayUDPRemoteControl() {
+	local GATEWAY_UDP_FILE=${SERVICE_DATA_PATH}/GatewayUDPRemoteControl.dat
+	local waitSeconds=${1:-0} indent=${2:-} i=0 gwIp gwPort gwFsm
+	while [ ! -s ${GATEWAY_UDP_FILE} ] && [ $i -lt $((waitSeconds * 2)) ]; do
+		sleep 0.5
+		i=$((i + 1))
+	done
+	[ -s ${GATEWAY_UDP_FILE} ] || return 0
+	read -r gwIp gwPort gwFsm < ${GATEWAY_UDP_FILE}
+	[ "${gwIp}" == "disabled" ] && return 0
+	if [ "${gwFsm}" == "1" ]; then
+		out "${indent}Gateway UDP Remote Control at ${Bold}${gwIp}:${gwPort}${RstClr} (GatewaySupervisorTable: IPAddress/PortForStateChangesOverUDP)"
+	else
+		out "${indent}Gateway UDP Remote Control at ${Bold}${gwIp}:${gwPort}${RstClr} (status queries only: EnableStateChangesOverUDP is off)"
+	fi
+	out "${indent}       at terminal: ${Bold}ots_drive_udp_test${RstClr} ${gwIp} ${gwPort}"
+}
+
 otsActionHandler() {
 
 	bpid=$BASHPID
@@ -5416,6 +5439,9 @@ otsActionHandler() {
 	fi
 	if [ "x$OTS_CONFIG_UDP_IP" != "x" ] && [ "x$OTS_CONFIG_UDP_PORT" != "x" ]; then
 		out "\tConfigurationGUI UDP Remote Control at ${Bold}${OTS_CONFIG_UDP_IP}:${OTS_CONFIG_UDP_PORT}${RstClr} (\$OTS_CONFIG_UDP_IP : \$OTS_CONFIG_UDP_PORT)"
+	fi
+	if [[ ($ISCONFIG == 0) && ($ISMACROMAKER == 0) && ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
+		printGatewayUDPRemoteControl 0 "\t"
 	fi
 
 	#listen for file commands
@@ -6827,6 +6853,9 @@ fi
 if [ "x$OTS_CONFIG_UDP_IP" != "x" ] && [ "x$OTS_CONFIG_UDP_PORT" != "x" ]; then
 	out "ConfigurationGUI UDP Remote Control at ${Bold}${OTS_CONFIG_UDP_IP}:${OTS_CONFIG_UDP_PORT}${RstClr} (\$OTS_CONFIG_UDP_IP : \$OTS_CONFIG_UDP_PORT)"
 	out "       at terminal: ${Bold}ots_cfg_udp_test${RstClr} ${OTS_CONFIG_UDP_IP} ${OTS_CONFIG_UDP_PORT}"
+fi
+if [[ ($ISCONFIG == 0) && ($ISMACROMAKER == 0) && ($ISACTIONONLY == 0) && ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
+	printGatewayUDPRemoteControl 10 #the Gateway writes the file during startup
 fi
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us

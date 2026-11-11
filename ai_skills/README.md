@@ -9,7 +9,7 @@ automate these recipes are indexed in `../ai_scripts/README.md`.
 | [ots-lite-architecture.md](ots-lite-architecture.md) | understand OTS_LITE: repos, XdaqLite, what is not built (artdaq), multi-context support, `mb`/`mz`/`mz_uc`, scripted `ots` start/stop, `#ifdef OTS_LITE` guards |
 | [development-workflow.md](development-workflow.md) | follow the edit/commit/build/test cycle and the rules for AI agents; helper-script pitfalls |
 | [configgui-udp.md](configgui-udp.md) | change configuration remotely, without DB access: read tables/tree, edit values, links and rows, create a table's first version, new groups, activate, Backbone aliases, Desktop icons |
-| [gateway-udp-fsm.md](gateway-udp-fsm.md) | drive the Gateway state machine (Configure/Start/Halt) and read status/icons over UDP; enabling it; alias/Backbone pitfalls |
+| [gateway-udp-fsm.md](gateway-udp-fsm.md) | drive the Gateway state machine (Configure/Start/Halt) and read status/icons over UDP with `ots_drive_udp_test`; enabling it; alias/Backbone pitfalls |
 | [macromaker-udp.md](macromaker-udp.md) | run FE macros and universal register read/write through MacroMaker UDP |
 | [emulator-registers.md](emulator-registers.md) | program `ots_udp_hw_emulator`: register map, data modes (counter/sine/multi-channel/sawtooth), the stream path to the Visualizer |
 | [tutorial-to-visualizer-waveforms.md](tutorial-to-visualizer-waveforms.md) | go from the first demo tutorial to live waveforms in the Visualizer window |

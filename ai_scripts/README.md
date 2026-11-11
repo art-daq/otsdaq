@@ -19,6 +19,16 @@ read its header) for usage.
 Config-changing scripts act as the Kerberos user and never proceed anonymously unless the user
 confirms. Context and Backbone changes need an `ots` restart to take effect.
 
+## Compiled tools (otsdaq-utilities/test, installed with the build)
+
+These are the first choice when built; the scripts above do similar jobs without a build.
+
+| Tool | Talks to | Does |
+|------|----------|------|
+| `ots_drive_udp_test <ip> <port> [...]` | Gateway UDP (address printed by `ots`) | drive the FSM (Configure/Start/Stop/Halt...) and wait for the result; status table; any Gateway query (`raw`) |
+| `ots_mm_udp_test <ip> <port> [...]` | MacroMaker UDP (`$OTS_MACROMAKER_UDP_*`) | list FEs and FE macros, run macros, `r`/`w` registers |
+| `ots_cfg_udp_test [-y] <ip> <port> <RequestType> [...]` | ConfigGUI UDP (`$OTS_CONFIG_UDP_*`) | any ConfigurationGUI request: read and edit tables, groups, aliases |
+
 ## Keeping this index current
 
 Add a row when you add a script (and its header comment: purpose, prerequisites, usage).

@@ -23,6 +23,39 @@ the lines `Enabling state changes over UDP...` and `enableStateChanges = 1`
 (the per-poll `Waiting for UDP State Changer packet on ...` line is a TRACE
 detail level and is normally not in the log).
 
+## CLI tool: ots_drive_udp_test (otsdaq-utilities)
+
+The Gateway counterpart of `ots_mm_udp_test` (MacroMaker) and `ots_cfg_udp_test` (ConfigGUI):
+it *drives* the FSM and the Gateway's queries. Source: `otsdaq-utilities/test/ots_drive_udp_test.cpp`
+and the self-contained client `ots_drive_udp_interface.{h,cpp}` (POSIX sockets, no otsdaq
+dependency).
+
+```bash
+ots_drive_udp_test 127.0.0.1 2014                                      # FSM names + app status table
+ots_drive_udp_test 127.0.0.1 2014 status                               # app status table only
+ots_drive_udp_test 127.0.0.1 2014 PhysicsRuns0 Configure defaultSystemAlias
+ots_drive_udp_test 127.0.0.1 2014 PhysicsRuns0 Start                    # [runNumber] optional
+ots_drive_udp_test 127.0.0.1 2014 PhysicsRuns0 Halt                     # also Stop, Pause, Resume, Initialize, Abort
+ots_drive_udp_test 127.0.0.1 2014 raw Help                              # any message, prints the reply
+```
+
+After an FSM command it polls the Gateway status until the target state (`Reached Configured.`,
+exit 0), a *new* `Failed:::` (status text or `statusChangeTime` changed since the command;
+prints the error chain, exit 1), no change at all for 10 s (command rejected: wrong state,
+unknown FSM or alias; exit 1), or the timeout (`--timeout <s>`, default 300; exit 2).
+`--no-wait` only sends. `Configure` without an alias is refused before sending. The Gateway
+reports a state only when every supervisor reached it, including those in other contexts.
+*Verified 2026-11-11*: Configure, Start, Stop, Halt and a rejected Start (from Halted).
+
+`ots` prints the address at launch, next to the other remote controls:
+`Gateway UDP Remote Control at <ip>:<port> ...` and `at terminal: ots_drive_udp_test <ip> <port>`
+(or `(status queries only: EnableStateChangesOverUDP is off)`). The address comes from the
+config tables, not env vars, so the Gateway writes `$SERVICE_DATA_PATH/GatewayUDPRemoteControl.dat`
+(`<ip> <port> <fsmCommandsEnabled 0|1>` once its socket is bound, or `disabled`) and `ots`
+reads it (it removes the file before launching the Gateway and waits up to 10 s for it).
+
+`ai_scripts/gateway_udp_cmd.sh` does the same with bash + python and needs no build.
+
 ## Protocol
 
 One datagram per command, plain text, sent to the IP:port above. **Replies

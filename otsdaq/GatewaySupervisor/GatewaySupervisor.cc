@@ -45,6 +45,10 @@ using namespace ots;
 #define LOG_ENTRY_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/FSM_LastLogEntry/"
 #define LOG_ENTRY_FILE_NAME "LastLogEntry.txt"
 #define FSM_LAST_GROUP_ALIAS_FILE_START std::string("FSMLastGroupAlias-")
+// Written at startup so the ots script can print how to reach the Gateway UDP listener:
+// "<ip> <port> <fsmCommandsEnabled 0|1>" once the socket is bound, or "disabled".
+#define GATEWAY_UDP_REMOTE_CONTROL_FILE \
+	std::string(__ENV__("SERVICE_DATA_PATH")) + "/GatewayUDPRemoteControl.dat"
 #define FSM_USERS_PREFERENCES_FILETYPE "pref"
 
 #define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
@@ -265,7 +269,11 @@ void GatewaySupervisor::init(void)
 			    .detach();
 		}
 		else
+		{
 			__COUT__ << "State changes over UDP are disabled." << __E__;
+			std::ofstream udpFile(GATEWAY_UDP_REMOTE_CONTROL_FILE);
+			udpFile << "disabled" << std::endl;
+		}
 	}  // end setting up thread for UDP drive of state machine
 
 	// setting up checking of App Status
@@ -3823,6 +3831,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		       << __E__;
 		__SS_THROW__;
 		return;
+	}
+
+	{
+		std::ofstream udpFile(GATEWAY_UDP_REMOTE_CONTROL_FILE);
+		udpFile << ipAddressForStateChangesOverUDP << " " << portForStateChangesOverUDP
+		        << " " << (enableStateChanges ? 1 : 0) << std::endl;
 	}
 
 	std::map<unsigned int /* lid */, SupervisorInfo>

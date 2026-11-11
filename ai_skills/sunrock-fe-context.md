@@ -121,8 +121,10 @@ FESunrockInterfaceTable was created with `saveSpecificTable` and CSV data (see
 - MacroMaker lists `SunrockInterface0`; FE macro `sunrockStatus` returns the placeholder
   status; `w 0x40 0x1234` then `r 0x40` reads back `...1234`; each Zynq access logs the
   ssh command it would run (`would run: ssh ... root@<ZynqHostName> 'devmem 0x40'`).
-- Not yet checked: Start/Halt with the Sunrock FE, and the Sunrock FE surviving the
-  emulator FE failing.
+- 2026-11-11: Configure, Start, Stop and Halt with `ots_drive_udp_test` all reached their
+  states (the Gateway reports a state only once every supervisor, including
+  `SunrockFESupervisor` on :2016, reached it).
+- Not yet checked: the Sunrock FE surviving the emulator FE failing.
 
 ## Known risks / next steps
 
