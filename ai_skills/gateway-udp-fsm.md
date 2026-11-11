@@ -37,6 +37,7 @@ chunks, so a client must keep receiving until it sees `</ROOT>`. A single
 | `GetStateMachineNames` | XML `<fsm value='...'/>` per FSM name |
 | `GetRemoteAppStatus` | XML: per supervisor, in order, `name`, `id`, `status`, `time`, `stale`, ..., `progress`, `detail`, ..., `class` |
 | `GetRemoteGatewayStatusXML` | same data, one `<supervisor .../>` element each |
+| `GetRemoteDesktopIcons` | the Desktop icon list as the Gateway loaded it (comma separated: ..., caption, alt text, permission, unique, image, window URL with `?urn=<LID>`, folder, ...); use it to confirm a new icon after a restart |
 | `<FSMName>,<Command>[,<param>...]` | FSM transition (reply only if acks enabled) |
 
 Find the Gateway in `GetRemoteAppStatus` by `<class value='ots::GatewaySupervisor'/>`,

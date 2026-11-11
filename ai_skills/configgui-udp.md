@@ -186,6 +186,7 @@ particular instance is hard-coded.
 | `cfg_udp_edit_field.sh <table> <uid> <column> <value> [groupType]` | one-field edit → save → new group → activate; refuses the enable-only gateway UDP edit |
 | `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port and enable flag together, chaining temporary versions |
 | `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
+| `add_desktop_icon.sh [-n] appstatus` or `<caption> <alt> <url> <image> [perm] [app] [unique] [folder]` | adds a Desktop icon to the active Context group (see "Desktop icons" below); `-n` is a dry run |
 
 ## Editing links and adding rows (saveTreeNodeEdit editNodeType values)
 
@@ -209,6 +210,42 @@ Notes from a real run (Visualizer window parameter, `mode=waveform`):
   both new versions in the `tableList` of one `saveNewTableGroup`.
 - Read the result back with `getTreeView ... startPath=/<Table>/<UID>/<LinkColumn>`
   before activating: a link edit shows as the linked rows under that path.
+
+### Desktop icons (e.g. the App Status icon)
+
+The Configuration GUI has buttons that add standard icons (App Status, Console, Code
+Editor, Iterator). They call `DesktopContent.addDesktopIcon`, i.e. the request
+`addDesktopIcon`, which is implemented by the **GatewaySupervisor**
+(`handleAddDesktopIconRequest` -> `ConfigurationSupervisorBase::handleAddDesktopIconXML`),
+not by the ConfigurationGUISupervisor, so it **cannot be sent over ConfigGUI UDP**.
+The same result is one record in `DesktopIconTable` plus a new Context group:
+
+| Column | App Status icon value |
+|--------|-----------------------|
+| `IconName` (UID) | `generatedIconAppStatus` (`generatedIcon` + letters/digits of the caption) |
+| `Status` | On |
+| `Caption`, `AlternateText` | `App Status`, `STAT` |
+| `ForceOnlyOneInstance` | True |
+| `RequiredPermissionLevel` | 1 |
+| `ImageURL` | `icon-SystemStatus.png` (in `WebGUI/images/iconImages`) |
+| `WindowContentURL` | `/WebPath/html/SystemStatus.html` (the page posts `getAppStatus` etc. to the Gateway) |
+| `LinkToApplicationTable` / `LinkToApplicationUID` | `XDAQApplicationTable` / `Supervisor` (the app with LID 200, the Gateway) |
+| `FolderPath` | `DEFAULT` (means none, like the stock icons) |
+
+Edits: `table-newRow` (`targetColumn=IconName newValue=<uid>`), then `value` edits, then
+`link-UID` for the app link (`newValue=XDAQApplicationTable,Supervisor`); persist, save a
+new Context group, activate. `ai_scripts/add_desktop_icon.sh appstatus` does all of it.
+
+Icons are loaded by the Gateway at startup, so restart `ots` afterwards. Verify with the
+Gateway UDP query `GetRemoteDesktopIcons` (see `gateway-udp-fsm.md`); the reply lists
+`...,App Status,STAT,1,1,icon-SystemStatus.png,http://<host>:<port>/WebPath/html/SystemStatus.html?urn=200&...`.
+A window parameter (`mode=waveform`, below) is a different mechanism: it needs
+`DesktopWindowParameterTable` rows and a parameter link on the icon.
+
+General rule: GUI requests are only reachable over ConfigGUI UDP when the
+ConfigurationGUISupervisor implements them. Requests handled by the Gateway
+(`addDesktopIcon`, `getAppStatus`, `restartApps`, ...) need the equivalent table edit, or
+the Gateway UDP messages.
 
 ### First version of a brand-new table (no saved versions yet)
 
