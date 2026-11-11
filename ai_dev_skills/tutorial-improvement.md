@@ -87,6 +87,9 @@ ai_dev_scripts/ff_screenshot.py "file://$PWD/htdocs/sandbox_nov2026/<slug>.html#
 - Put the date and otsdaq version the page was checked against on the title slide.
 - Remove advice you cannot verify, and say so in the commit message.
 - Link other tutorials as `<slug>.md` and the home page as `index.md`; the build makes them `.html`.
+- Never write `user@host` in a page: Cloudflare in front of otsdaq.fnal.gov rewrites anything that
+  looks like an email address in HTML into "[email protected]", even inside code blocks. Write
+  `ssh -l you yourhost.fnal.gov` instead.
 
 ## Facts found while fixing "Installing and Starting otsdaq" (2026-11-11)
 
