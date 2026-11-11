@@ -3,6 +3,8 @@
 Knowledge for AI agents (and people) working on otsdaq, mostly the lite build (`OTS_LITE`).
 Each file says what was verified on a real run and what is still unverified. Scripts that
 automate these recipes are indexed in `../ai_scripts/README.md`.
+Knowledge about maintaining the project itself (README, documentation publishing, CI) is in
+`../ai_dev_skills/README.md`.
 
 | Skill | Use it to |
 |-------|-----------|
