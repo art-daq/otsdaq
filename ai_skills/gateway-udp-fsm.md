@@ -224,7 +224,7 @@ different things; pick the lightest one that covers the change.
 | Gateway configuration manager (its table lookups, Backbone/aliases, Desktop icons) | yes | yes (`cfgMgr->init()`) | yes (`cfgMgr->init()`) |
 | Gateway UDP listener: `EnableStateChangesOverUDP`, IP/port, ack/login verification, `GatewayUDPRemoteControl.dat` | yes | **yes (since 2026-11-11)** | no |
 | App status monitoring on/off and its two threads | yes | **yes (since 2026-11-11)** | no |
-| Gateway request permissions (properties of the Gateway app: `UserPermissionsThreshold`, groups allowed, ...) | yes | **yes (since 2026-11-11, re-read on the next request)** | no |
+| Gateway request permissions (properties of the Gateway app: `UserPermissionsThreshold`, groups allowed, ...) | yes | **yes (since 2026-11-11, reloaded during Startup)** | no |
 | Gateway list of apps it commands and monitors (`allSupervisorInfo_`, from its XDAQ context) | yes | no | no |
 | Apps in the Gateway's own context (ConfigGUI, MacroMaker, Visualizer, ... in `mainContext`) | yes | no (process kept; their permissions reset at their own Initialize) | no |
 | Env-var features (`OTS_MACROMAKER_UDP_*`, `OTS_CONFIG_UDP_*`, `OTSDAQ_*_DISK_MINIMUM`, `OTS_PORT_TRANSLATION_MAP_FILE`, `OTS_LOG_*`) | yes (env of the new processes) | no | no (relaunched contexts get the ots script's env) |
@@ -243,8 +243,10 @@ What Startup does in the Gateway (since 2026-11-11, `GatewaySupervisor::transiti
 stop the UDP state changer and both app status threads (`stopBackgroundWorkLoops()`: they exit at
 their next pass, joined so the UDP port is released), re-initialize the configuration manager and
 send `OTS_APP_STARTUP` (`launchStartOTSCommand`), start the threads again from the reloaded
-`GatewaySupervisorTable` (`startBackgroundWorkLoops()`), and `resetPropertiesAreSetup()` so request
-permissions are re-read on next use. If sending the command fails, the threads are restarted anyway.
+`GatewaySupervisorTable` (`startBackgroundWorkLoops()`), and reload the request permissions right
+there (`reloadSupervisorProperties()`: reset and load, so a property error fails Startup instead of
+surfacing on a later request). If sending the command fails, the threads are restarted anyway and
+the permissions are left as they were.
 The Gateway's own Initialize does **not** reset its permissions (other supervisors do, in
 `CoreSupervisorBase::transitionInitializing`).
 

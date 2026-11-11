@@ -8447,7 +8447,7 @@ try
 	//	stop the UDP state changer and app status threads, re-initialize the
 	//	configuration manager (done by launchStartOTSCommand, which also rewrites the
 	//	XDAQ context XML), then restart the threads from the reloaded GatewaySupervisorTable
-	//	and force request permissions (supervisor properties) to be re-read on next use.
+	//	and reload request permissions (supervisor properties) as part of the transition.
 	stopBackgroundWorkLoops();
 	try
 	{
@@ -8458,13 +8458,12 @@ try
 	catch(...)
 	{
 		startBackgroundWorkLoops();  // never leave the Gateway without its UDP/status loops
-		CorePropertySupervisorBase::resetPropertiesAreSetup();
 		throw;
 	}
 	startBackgroundWorkLoops();
-	CorePropertySupervisorBase::resetPropertiesAreSetup();
+	CorePropertySupervisorBase::reloadSupervisorProperties();
 	__COUT_INFO__ << "Gateway UDP/app-status work loops restarted and request permissions "
-	                 "will be re-read from the active Context group."
+	                 "reloaded from the active Context group."
 	              << __E__;
 	RunControlStateMachine::theProgressBar_.step();
 
