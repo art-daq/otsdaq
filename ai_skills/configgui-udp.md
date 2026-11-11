@@ -186,7 +186,9 @@ particular instance is hard-coded.
 | `cfg_udp_edit_field.sh <table> <uid> <column> <value> [groupType]` | one-field edit → save → new group → activate; refuses the enable-only gateway UDP edit |
 | `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port and enable flag together, chaining temporary versions |
 | `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
-| `add_desktop_icon.sh [-n] appstatus` or `<caption> <alt> <url> <image> [perm] [app] [unique] [folder]` | adds a Desktop icon to the active Context group (see "Desktop icons" below); `-n` is a dry run |
+| `add_desktop_icon.sh [-n] [-w] appstatus\|subsystemlaunch` or `<caption> <alt> <url> <image> [perm] [app] [unique] [folder]` | adds a Desktop icon to the active Context group (see "Desktop icons" below); `-n` is a dry run, `-w` accepts tree warnings |
+| `cfg_udp_edit_group.sh [-n] [-w] [-g newName] <edit>...` | many edits across tables into one new group (cells, links, rows, `new:`/`add:` tables), activate |
+| `add_remote_subsystem.sh` | top-level Context: satellite icon + `SubsystemUserDataPathsTable` row (see `ots-subsystems.md`) |
 
 ## Editing links and adding rows (saveTreeNodeEdit editNodeType values)
 
@@ -210,6 +212,13 @@ Notes from a real run (Visualizer window parameter, `mode=waveform`):
   both new versions in the `tableList` of one `saveNewTableGroup`.
 - Read the result back with `getTreeView ... startPath=/<Table>/<UID>/<LinkColumn>`
   before activating: a link edit shows as the linked rows under that path.
+
+### Tree warnings block a group save
+
+`saveNewTableGroup` (and `activateTableGroup`) can reply with only `<TreeErrors value='...'/>` and no
+`TableGroupKey`: warnings the GUI shows for you to accept (e.g. an Off app linking to a table that is not
+in the group). Resend with `ignoreWarnings=1`. Parse the key with `<TableGroupKey value='` and take the
+first match: an activation with a malformed key leaves the running instance with no active group.
 
 ### Reverting to an earlier configuration: "duplicate of an existing group key"
 

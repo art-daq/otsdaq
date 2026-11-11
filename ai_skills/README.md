@@ -16,6 +16,7 @@ Knowledge about maintaining the project itself (README, documentation publishing
 | [emulator-registers.md](emulator-registers.md) | program `ots_udp_hw_emulator`: register map, data modes (counter/sine/multi-channel/sawtooth), the stream path to the Visualizer |
 | [tutorial-to-visualizer-waveforms.md](tutorial-to-visualizer-waveforms.md) | go from the first demo tutorial to live waveforms in the Visualizer window |
 | [sunrock-fe-context.md](sunrock-fe-context.md) | the Sunrock placeholder FE (repo `otsdaq-td-ims-asic`) in its own context and FE Supervisor: config rows, install steps, checks |
+| [ots-subsystems.md](ots-subsystems.md) | run a top-level ots and its satellite subsystems (Remote Gateways) from one lite area: `source setup_ots.sh <name>`, `Data_<name>`, shared database, the icon + `SubsystemUserDataPathsTable` pair, Subsystem Launch page, `RemoteSubsystems.txt`, per-instance ports, recipe, log checks, pitfalls |
 | [trace-and-logging.md](trace-and-logging.md) | use TRACE and MessageFacility; where logs go in lite |
 
 ## Keeping this index current

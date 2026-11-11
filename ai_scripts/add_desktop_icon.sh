@@ -11,13 +11,19 @@
 #     before proceeding anonymously, and this script never auto-confirms that
 #
 # Usage:
-#   ./add_desktop_icon.sh [-n] appstatus
-#   ./add_desktop_icon.sh [-n] <caption> <altText> <windowURL> <imageURL> [permission] [linkedApp] [unique] [folder]
+#   ./add_desktop_icon.sh [-n] [-w] appstatus | subsystemlaunch
+#   ./add_desktop_icon.sh [-n] [-w] <caption> <altText> <windowURL> <imageURL> [permission] [linkedApp] [unique] [folder]
 #
+#   -w          accept tree warnings when saving/activating the group (ignoreWarnings=1, as the
+#               GUI does once you accept them); without it such a save returns no key
 #   -n          dry run: make the temporary table edits (visible only to this UDP user),
 #               print the new row, and stop before saving anything
 #   appstatus   preset: "App Status", STAT, /WebPath/html/SystemStatus.html,
 #               icon-SystemStatus.png, permission 1, linked to the Gateway (LID 200), unique
+#   subsystemlaunch  preset: "Subsystem Launch", LAUNCH, /WebPath/html/SubsystemLaunch.html,
+#               icon-Rocket.png, permission 1, linked to the Gateway, unique: the top-level page
+#               to monitor/configure/start and relaunch Remote Gateway subsystems (no fsm_name
+#               parameter: the page offers a Run Type dropdown)
 #   permission  RequiredPermissionLevel (default 1)
 #   linkedApp   XDAQApplicationTable app UID or numeric LID the window talks to; the
 #               Gateway is LID 200 (default 200); use NONE for no link
@@ -32,17 +38,22 @@
 
 set -e
 
-DRY=0
-if [ "$1" = "-n" ]; then DRY=1; shift; fi
+DRY=0; IGNW=0
+while [ "$1" = "-n" ] || [ "$1" = "-w" ]; do
+    [ "$1" = "-n" ] && DRY=1; [ "$1" = "-w" ] && IGNW=1; shift
+done
 
 if [ "$1" = "appstatus" ]; then
     CAPTION="App Status"; ALT="STAT"; URL="/WebPath/html/SystemStatus.html"
     IMAGE="icon-SystemStatus.png"; PERM=1; LINKED=200; UNIQUE=1; FOLDER=""
+elif [ "$1" = "subsystemlaunch" ]; then
+    CAPTION="Subsystem Launch"; ALT="LAUNCH"; URL="/WebPath/html/SubsystemLaunch.html"
+    IMAGE="icon-Rocket.png"; PERM=1; LINKED=200; UNIQUE=1; FOLDER=""
 elif [ $# -ge 4 ]; then
     CAPTION="$1"; ALT="$2"; URL="$3"; IMAGE="$4"
     PERM="${5:-1}"; LINKED="${6:-200}"; UNIQUE="${7:-1}"; FOLDER="${8:-}"
 else
-    sed -n 2,34p "$0" | sed 's/^# \{0,1\}//'
+    sed -n 2,38p "$0" | sed 's/^# \{0,1\}//'
     exit 1
 fi
 
@@ -165,16 +176,21 @@ echo
 echo "Step 3: save a new $GROUP_NAME group"
 TABLE_LIST=$(echo "$MEMBERS" | grep -A1 MemberName | grep -oP "(MemberName|MemberVersion) value='\K[^']+" | paste -d, - - | tr '\n' ',' \
     | sed "s/DesktopIconTable,[0-9]*,/DesktopIconTable,$NEW_VERSION,/")
-GROUP=$(cfg saveNewTableGroup groupName="$GROUP_NAME" groupComment="$ENC_COMMENT" tableList="$TABLE_LIST")
+GROUP=$(cfg saveNewTableGroup groupName="$GROUP_NAME" groupComment="$ENC_COMMENT" tableList="$TABLE_LIST" ignoreWarnings=$IGNW)
+TREE=$(echo "$GROUP" | grep -oP "TreeErrors value='\K[^']+" | sed "s/&apos;/'/g" | tr '|' '\n' | grep -v '^ConfigurationManager:' || true)
+if [ -n "$TREE" ] && ! echo "$GROUP" | grep -q "<TableGroupKey value="; then
+    echo "Group not saved, tree warnings:"; echo "$TREE" | sed 's/^/  /'
+    echo "DesktopIconTable v$NEW_VERSION is saved; rerun with -w to accept the warnings."; exit 1
+fi
 DUP_KEY=$(echo "$GROUP" | grep -oP "duplicate of an existing group key \(\K[0-9]+" || true)
 [ -n "$DUP_KEY" ] && { echo "Group is identical to existing $GROUP_NAME key $DUP_KEY; activating that key."; GROUP="<TableGroupKey value='$DUP_KEY'/>"; }
-NEW_KEY=$(echo "$GROUP" | grep -oP "<TableGroupKey value='\K[^']+" || true)
+NEW_KEY=$(echo "$GROUP" | grep -oP "<TableGroupKey value='\K[^']+" | head -1 || true)
 [ -n "$NEW_KEY" ] || { echo "ERROR in saveNewTableGroup: $(xml_error "$GROUP")"; exit 1; }
 echo "New group: $GROUP_NAME key $NEW_KEY"
 
 echo
 echo "Step 4: activate $GROUP_NAME key $NEW_KEY"
-ACT=$(cfg activateTableGroup groupName="$GROUP_NAME" groupKey="$NEW_KEY" ignoreWarnings=0)
+ACT=$(cfg activateTableGroup groupName="$GROUP_NAME" groupKey="$NEW_KEY" ignoreWarnings=$IGNW)
 echo "Active Context key: $(echo "$ACT" | grep -oP "Context-ActiveGroupKey value='\K[^']+" || true)"
 
 echo

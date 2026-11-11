@@ -13,7 +13,10 @@ read its header) for usage.
 | [cfg_udp_browse_tree.sh](cfg_udp_browse_tree.sh) | ConfigGUI UDP | read-only tree browse of the active Context group |
 | [cfg_udp_edit_field.sh](cfg_udp_edit_field.sh) | ConfigGUI UDP, Kerberos | edit one field, save a new group and activate it |
 | [enable_gateway_udp_transitions.sh](enable_gateway_udp_transitions.sh) | ConfigGUI UDP, Kerberos | enable Gateway UDP state changes (IP, port and flag together) |
-| [add_desktop_icon.sh](add_desktop_icon.sh) | ConfigGUI UDP, Kerberos | add a Desktop icon (e.g. `appstatus`) to the active Context group; `-n` dry run |
+| [add_desktop_icon.sh](add_desktop_icon.sh) | ConfigGUI UDP, Kerberos | adds a Desktop icon (presets `appstatus`, `subsystemlaunch`) to the active Context group; `-n` dry run, `-w` accept tree warnings |
+| [cfg_udp_edit_group.sh](cfg_udp_edit_group.sh) | ConfigGUI UDP, Kerberos | many edits across a group's tables (cells, links, new rows, row deletes `-T/uid` after `--`, `new:` first table version, `add:` existing table), one new group (optionally a new name), activate; `-n` dry run, `-w` accept tree warnings |
+| [add_remote_subsystem.sh](add_remote_subsystem.sh) | ConfigGUI UDP of the top level, Kerberos | make a satellite ots a Remote Gateway subsystem of the top level: `SubsystemUserDataPathsTable` row + `ots:` Desktop icon in one Context group; `-n` dry run |
+| [setup_ots_subsystems.sh](setup_ots_subsystems.sh) | write access to `setup_ots.sh` | make `source setup_ots.sh <subsystem>` select `Data_<subsystem>` and its ports (shared database); rerun after `mz_uc` |
 | [revert_active_table_group.sh](revert_active_table_group.sh) | file access to `Data/ServiceData` | revert an active group key when `ots` cannot start |
 
 Config-changing scripts act as the Kerberos user and never proceed anonymously unless the user
