@@ -58,12 +58,15 @@ echo "ConfigGUI UDP: $CFG_IP:$CFG_PORT"
 echo
 
 # Helper: run ots_cfg_udp_test with auto-confirm
+# ots_cfg_udp_test exits 1 when the reply holds an <Error> (even a harmless one), which
+# would end this script under set -e before it can read the reply; every call below
+# inspects its own reply, so the exit status is deliberately ignored.
 cfg() {
-    ots_cfg_udp_test "$CFG_IP" "$CFG_PORT" "$@" 2>&1
+    ots_cfg_udp_test "$CFG_IP" "$CFG_PORT" "$@" 2>&1 || true
 }
 
 cfg_ro() {
-    ots_cfg_udp_test -y "$CFG_IP" "$CFG_PORT" "$@" 2>&1
+    ots_cfg_udp_test -y "$CFG_IP" "$CFG_PORT" "$@" 2>&1 || true
 }
 
 # Get active context group
@@ -184,7 +187,18 @@ done <<< "$MEMBERS"
 GROUP_RESULT=$(cfg saveNewTableGroup \
     groupName="$GROUP_NAME" groupComment=Enable%20UDP%20state%20changes \
     tableList="$TABLE_LIST")
-NEW_KEY=$(echo "$GROUP_RESULT" | grep -oP "TableGroupKey value='\K[^']+")
+# Reverting to an earlier set of table versions recreates an existing group, which the
+# server refuses as a duplicate while naming that group's key: activate that key instead.
+DUP_KEY=$(echo "$GROUP_RESULT" | grep -oP "duplicate of an existing group key \(\K[0-9]+" || true)
+if [ -n "$DUP_KEY" ]; then
+    echo "Group is identical to existing $GROUP_NAME key $DUP_KEY; activating that key."
+    GROUP_RESULT="<TableGroupKey value='$DUP_KEY'/>"
+fi
+NEW_KEY=$(echo "$GROUP_RESULT" | grep -oP "TableGroupKey value='\K[^']+" || true)
+if [ -z "$NEW_KEY" ]; then
+    echo "ERROR in saveNewTableGroup: $(echo "$GROUP_RESULT" | grep -oP "Error value='\K[^']+" | head -1)"
+    exit 1
+fi
 echo "New group: $GROUP_NAME key $NEW_KEY"
 
 # Step 4: Activate the new group

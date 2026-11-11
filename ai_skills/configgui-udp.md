@@ -211,6 +211,16 @@ Notes from a real run (Visualizer window parameter, `mode=waveform`):
 - Read the result back with `getTreeView ... startPath=/<Table>/<UID>/<LinkColumn>`
   before activating: a link edit shows as the linked rows under that path.
 
+### Reverting to an earlier configuration: "duplicate of an existing group key"
+
+Setting values back recreates a table version that already exists (`saveSpecificTable` with
+`lookForEquivalent=1` returns the old version) and so a group identical to an existing one.
+`saveNewTableGroup` then refuses it: `<Error ... Failed to create table group: <name>. It is a
+duplicate of an existing group key (N)'/>`, with `<TableGroupKey value='N'/>` in the same reply.
+Activate key N instead (the helper scripts do). Note `ots_cfg_udp_test` exits 1 whenever the
+reply holds an `<Error>`: scripts using `set -e` must not let that end them before they read the
+reply (`ots_cfg_udp_test ... || true`).
+
 ### Desktop icons (e.g. the App Status icon)
 
 The Configuration GUI has buttons that add standard icons (App Status, Console, Code

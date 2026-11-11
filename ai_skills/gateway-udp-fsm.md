@@ -256,10 +256,17 @@ and set the Gateway to `Failed` even though the FSM reached `Shutdown` (observed
 worked from there). Now an unreachable app is not an error while a Shutdown or Startup transition
 is running, or in the `Shutdown` state.
 
-Verification status: the old-code behavior above (17 s Startup, new 2016 pid, false crash on
-Shutdown, Startup rejected from `Initial`) was observed 2026-11-11. The new Gateway code compiled
-(syntax check with the build's flags) but was **not yet run**: after a rebuild, check that Startup
-moves the UDP listener when its port is changed in the Context, that `GatewayUDPRemoteControl.dat`
-is rewritten, that Shutdown no longer ends in `Failed`, and that a changed Gateway permission takes
-effect after Startup.
+Verification (2026-11-11, lite, rebuilt): Shutdown from Halted reached `Shutdown` in 8 s with no
+"Did a supervisor crash" errors (the 2016 context was killed, its supervisor shown `UNKNOWN`).
+With the Gateway UDP port changed 2014 -> 2017 in the active Context, Startup sent on 2014 moved
+the listener to 2017 without a process restart (2014 released, `GatewayUDPRemoteControl.dat`
+rewritten, Initial reached ~8 s after sending, 2016 context relaunched); the reverse change
+moved it back to 2014. The log shows, in order: `Stopping background work loops`, both status
+loops exiting at once, the UDP loop exiting within 2 s, `Starting background work loops`, and the
+Gateway's `Final supervisor property settings` printed inside the transition. Before the change,
+Shutdown ended in `Failed` (false crash) and Startup was rejected from `Initial`.
+Not tested: that a *changed* Gateway permission takes effect (needs an authenticated browser
+request); only that the properties are reloaded during Startup.
 
+Tip: when you send Startup to a Gateway whose UDP port is changing, use
+`ots_drive_udp_test <ip> <oldPort> <FSM> Startup --no-wait` and follow the status on the new port.

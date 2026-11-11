@@ -166,6 +166,8 @@ echo "Step 3: save a new $GROUP_NAME group"
 TABLE_LIST=$(echo "$MEMBERS" | grep -A1 MemberName | grep -oP "(MemberName|MemberVersion) value='\K[^']+" | paste -d, - - | tr '\n' ',' \
     | sed "s/DesktopIconTable,[0-9]*,/DesktopIconTable,$NEW_VERSION,/")
 GROUP=$(cfg saveNewTableGroup groupName="$GROUP_NAME" groupComment="$ENC_COMMENT" tableList="$TABLE_LIST")
+DUP_KEY=$(echo "$GROUP" | grep -oP "duplicate of an existing group key \(\K[0-9]+" || true)
+[ -n "$DUP_KEY" ] && { echo "Group is identical to existing $GROUP_NAME key $DUP_KEY; activating that key."; GROUP="<TableGroupKey value='$DUP_KEY'/>"; }
 NEW_KEY=$(echo "$GROUP" | grep -oP "<TableGroupKey value='\K[^']+" || true)
 [ -n "$NEW_KEY" ] || { echo "ERROR in saveNewTableGroup: $(xml_error "$GROUP")"; exit 1; }
 echo "New group: $GROUP_NAME key $NEW_KEY"
