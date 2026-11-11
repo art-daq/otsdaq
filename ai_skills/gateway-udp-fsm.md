@@ -159,11 +159,15 @@ below with its cause.
 - `Failed:::` status stays until the next successful transition; Halt or retry to
   clear it.
 
-## Config changes need an ots restart, and the alias must follow the group
+## Config changes and the alias must follow the group
+
+Which restart a change needs is in "Applying Active Context changes" below.
+
 
 - Activating a new Configuration group over ConfigGUI UDP does not reload it in
   already-running supervisors: Configure keeps using the group loaded at startup
-  (the old consumer/plugin error repeats). Restart `ots` after changing any group.
+  (the old consumer/plugin error repeats). Restart `ots` after changing any group
+  (observed 2026-11-02 with a total restart; see the matrix below for lighter options).
 - `Configure,<alias>` resolves the alias through the **active Backbone group**,
   not the latest `GroupAliasesTable`. A new Configuration group is ignored until
   (1) `setGroupAliasInActiveBackbone groupAlias=<alias> groupName=<group> groupKey=<newKey>`
@@ -178,3 +182,82 @@ below with its cause.
   (edit, saveSpecificTable, saveNewTableGroup on the Configuration group,
   activateTableGroup, repoint the alias, restart).
 - Start `ots_udp_hw_emulator` before Configure; `ots` does not start it.
+
+## Applying Active Context changes: total restart vs Shutdown/Startup vs App Status relaunch
+
+Three ways to make running processes follow a newly activated Context group. They renew
+different things; pick the lightest one that covers the change.
+
+### How to run each
+
+1. **Total restart**: every process is recreated, everything is renewed.
+   - terminal: `echo Y | ots -k` then `ots` (`-k` asks "Are you sure"; for a script use
+     `nohup ots > /tmp/ots_run.log 2>&1 &`), or `kx; ots` interactively.
+   - GUI: App Status window, relaunch button (request `gatewayLaunchOTS`, ots action
+     `LAUNCH_OTS` on every context host: kill all and relaunch; keeps login sessions).
+   - ends at `Initial` for the whole system.
+2. **Shutdown -> Startup** (FSM transitions; the Gateway process keeps running).
+   - Shutdown is allowed only from `Halted` or `Failed` (`Initial`: Initialize first;
+     `Configured`/`Running`: Halt first). Startup goes `Shutdown` -> `Initial`, then Initialize.
+   - UDP: `ots_drive_udp_test <ip> <port> <FSM> Shutdown`, then `... Startup`, then
+     `... Initialize`. GUI: the State Machine window buttons.
+   - Shutdown writes `OTS_APP_SHUTDOWN` to every context host's ots action file: the ots
+     script kills all **non-gateway** contexts. Startup writes `OTS_APP_STARTUP`: they are
+     relaunched. Measured 2026-11-11: Startup takes ~17 s; the 2016 context came back with a
+     new pid, all apps at `Initial`.
+3. **App Status relaunch of a context** (no FSM transition).
+   - GUI only: App Status window, the restart button on a context row (request
+     `restartApps&contextName=<ContextUID>`, handled by the Gateway over HTTP; no UDP form).
+   - It sends `OTS_APP_SHUTDOWN` then `OTS_APP_STARTUP` to the ots script on **that
+     context's host**, which kills and relaunches **all non-gateway contexts on that host**
+     (the button says "restarting server ... for 'non-gateway apps'"), not only the chosen
+     one. The Gateway's own context is never relaunched this way.
+   - The Gateway FSM state is unchanged; relaunched apps come up `Initial`, out of step with
+     a Configured/Running system: Halt (and Initialize/Configure) to re-align them.
+
+### What is renewed to match the Active Context
+
+| Gateway feature / process | Total restart | Shutdown -> Startup | App Status relaunch |
+|---------------------------|:---:|:---:|:---:|
+| Non-gateway context processes (their apps reload all active groups when they start) | yes | yes, all hosts | yes, all non-gateway contexts on that host |
+| Context **layout**: contexts/apps added or removed, host/port, LID, class, module | yes | **no** | **no** |
+| Gateway configuration manager (its table lookups, Backbone/aliases, Desktop icons) | yes | yes (`cfgMgr->init()`) | yes (`cfgMgr->init()`) |
+| Gateway UDP listener: `EnableStateChangesOverUDP`, IP/port, ack/login verification, `GatewayUDPRemoteControl.dat` | yes | **yes (since 2026-11-11)** | no |
+| App status monitoring on/off and its two threads | yes | **yes (since 2026-11-11)** | no |
+| Gateway request permissions (properties of the Gateway app: `UserPermissionsThreshold`, groups allowed, ...) | yes | **yes (since 2026-11-11, re-read on the next request)** | no |
+| Gateway list of apps it commands and monitors (`allSupervisorInfo_`, from its XDAQ context) | yes | no | no |
+| Apps in the Gateway's own context (ConfigGUI, MacroMaker, Visualizer, ... in `mainContext`) | yes | no (process kept; their permissions reset at their own Initialize) | no |
+| Env-var features (`OTS_MACROMAKER_UDP_*`, `OTS_CONFIG_UDP_*`, `OTSDAQ_*_DISK_MINIMUM`, `OTS_PORT_TRANSLATION_MAP_FILE`, `OTS_LOG_*`) | yes (env of the new processes) | no | no (relaunched contexts get the ots script's env) |
+| Web users / security mode | yes | no | no |
+| FSM state | -> `Initial` | -> `Initial` | unchanged (relaunched apps `Initial`) |
+| `ots_udp_hw_emulator` and other external processes | no | no | no |
+
+Why the layout is not renewed: the Gateway rewrites `XDAQConfigurations/otsConfiguration_CMake_Run.xml`
+from the active Context whenever its configuration manager initializes (`XDAQContextTable::init`),
+but the ots script launches contexts from its copy `ots.xml`, taken only at a full (gateway)
+launch; a non-gateway relaunch copies it only if missing. The Gateway's `allSupervisorInfo_` is
+also built once, from the XDAQ context it was launched with. So adding a context (e.g. the Sunrock
+FE context), an application, or changing a port/LID needs a total restart.
+
+What Startup does in the Gateway (since 2026-11-11, `GatewaySupervisor::transitionStartingUp`):
+stop the UDP state changer and both app status threads (`stopBackgroundWorkLoops()`: they exit at
+their next pass, joined so the UDP port is released), re-initialize the configuration manager and
+send `OTS_APP_STARTUP` (`launchStartOTSCommand`), start the threads again from the reloaded
+`GatewaySupervisorTable` (`startBackgroundWorkLoops()`), and `resetPropertiesAreSetup()` so request
+permissions are re-read on next use. If sending the command fails, the threads are restarted anyway.
+The Gateway's own Initialize does **not** reset its permissions (other supervisors do, in
+`CoreSupervisorBase::transitionInitializing`).
+
+App status during Shutdown/Startup: before 2026-11-11 the app status thread treated the apps that
+Shutdown deliberately kills as crashed ("Did a supervisor crash? Failed getting status from ...")
+and set the Gateway to `Failed` even though the FSM reached `Shutdown` (observed; Startup still
+worked from there). Now an unreachable app is not an error while a Shutdown or Startup transition
+is running, or in the `Shutdown` state.
+
+Verification status: the old-code behavior above (17 s Startup, new 2016 pid, false crash on
+Shutdown, Startup rejected from `Initial`) was observed 2026-11-11. The new Gateway code compiled
+(syntax check with the build's flags) but was **not yet run**: after a rebuild, check that Startup
+moves the UDP listener when its port is changed in the Context, that `GatewayUDPRemoteControl.dat`
+is rewritten, that Shutdown no longer ends in `Failed`, and that a changed Gateway permission takes
+effect after Startup.
+

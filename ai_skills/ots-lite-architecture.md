@@ -31,6 +31,9 @@ partition XML, and registers the other contexts' applications as remote; `postSO
 remote context is an HTTP POST to `/urn:xdaq-application:lid=<N>` of that process. `ots`
 launches extra local non-gateway contexts itself (`xdaq.exe -h <host> -p <port>`); their logs
 are `Data/Logs/otsdaq_quiet_run-<host>-<port>.txt`. See `sunrock-fe-context.md`.
+Adding or changing a context (or an app, port, LID) needs a total restart: Shutdown/Startup and
+App Status relaunches start contexts from the `ots.xml` snapshot of the last full launch (see
+"Applying Active Context changes" in `gateway-udp-fsm.md`).
 
 ## XdaqLite
 

@@ -195,6 +195,8 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 /// entry is made when ots is killed
 GatewaySupervisor::~GatewaySupervisor(void)
 {
+	stopBackgroundWorkLoops();  // the threads use this object
+
 	//join before deleting the configuration manager that the thread reads,
 	//	and before the unique_ptr member is destroyed
 	joinConfigDumpCachingThread();
@@ -230,101 +232,7 @@ void GatewaySupervisor::init(void)
 	//Initialize the variable used by the RunInfo plugin
 	conditionID_ = (unsigned int)-1;
 
-	// setting up thread for UDP thread to drive state machine
-	{
-		bool enableStateChanges = false;
-		bool enableLoginVerify  = false;
-		try
-		{
-			enableStateChanges = CorePropertySupervisorBase::getSupervisorTableNode()
-			                         .getNode("EnableStateChangesOverUDP")
-			                         .getValue<bool>();
-			enableLoginVerify = CorePropertySupervisorBase::getSupervisorTableNode()
-			                        .getNode("EnableAckForStateChangesOverUDP")
-			                        .getValue<bool>();
-		}
-		catch(...)
-		{
-			;
-		}  // ignore errors
-
-		if(enableStateChanges || enableLoginVerify)
-		{
-			if(enableStateChanges)
-				__COUT_INFO__ << "Enabling state changes over UDP..." << __E__;
-			else if(enableLoginVerify)
-			{
-				__COUT_INFO__ << "Enabling this Gateway as source of primary login "
-				                 "verification over UDP..."
-				              << __E__;
-
-				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-				loadRemoteGatewaySettings(remoteGatewayApps_);
-			}
-
-			// start state changer UDP listener thread
-			std::thread(
-			    [](GatewaySupervisor* s) { GatewaySupervisor::StateChangerWorkLoop(s); },
-			    this)
-			    .detach();
-		}
-		else
-		{
-			__COUT__ << "State changes over UDP are disabled." << __E__;
-			std::ofstream udpFile(GATEWAY_UDP_REMOTE_CONTROL_FILE);
-			udpFile << "disabled" << std::endl;
-		}
-	}  // end setting up thread for UDP drive of state machine
-
-	// setting up checking of App Status
-	{
-		bool checkAppStatus = false;
-		try
-		{
-			checkAppStatus = CorePropertySupervisorBase::getSupervisorTableNode()
-			                     .getNode("EnableApplicationStatusMonitoring")
-			                     .getValue<bool>();
-		}
-		catch(...)
-		{
-			;
-		}  // ignore errors
-
-		if(checkAppStatus)
-		{
-			__COUT__ << "Enabling App Status checking..." << __E__;
-
-			//make one thread for rapid status checking
-			// and one for disconnected status checking (with long timeouts)
-			std::thread(
-			    [](GatewaySupervisor* s) { GatewaySupervisor::AppStatusWorkLoop(s); },
-			    this)
-			    .detach();
-
-			std::thread(
-			    [](GatewaySupervisor* s) {
-				    GatewaySupervisor::AppStatusWorkLoop(s, true /* doDisconnected */);
-			    },
-			    this)
-			    .detach();
-		}
-		else
-		{
-			__COUT__ << "App Status checking is disabled." << __E__;
-
-			// set all app status to "Not Monitored" so that FSM changes ignore missing app status
-			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
-			{
-				auto appInfo = it.second;
-				allSupervisorInfo_.setSupervisorStatus(
-				    appInfo,
-				    SupervisorInfo::APP_STATUS_NOT_MONITORED,
-				    0 /* progressInteger */,
-				    "" /* detail */);
-			}
-		}
-
-	}  // end checking of Application Status
+	startBackgroundWorkLoops();
 
 	// setup port translation
 	{
@@ -433,13 +341,162 @@ void GatewaySupervisor::init(void)
 }  // end init()
 
 //==============================================================================
+/// startBackgroundWorkLoops
+///	Starts the UDP state changer thread and the two app status threads according to
+///	the GatewaySupervisorTable record of the active Context group (as currently loaded
+///	in theConfigurationManager_). Called at construction and at the Startup transition,
+///	after stopBackgroundWorkLoops(), so Context changes to these features (enable flags,
+///	UDP IP/port, ack/login verification, remote gateway settings) are picked up without
+///	restarting the Gateway process.
+void GatewaySupervisor::startBackgroundWorkLoops(void)
+{
+	const unsigned int generation = backgroundWorkLoopGeneration_;
+	__COUT__ << "Starting background work loops (generation " << generation << ")..."
+	         << __E__;
+
+	// setting up thread for UDP thread to drive state machine
+	{
+		bool enableStateChanges = false;
+		bool enableLoginVerify  = false;
+		try
+		{
+			enableStateChanges = CorePropertySupervisorBase::getSupervisorTableNode()
+			                         .getNode("EnableStateChangesOverUDP")
+			                         .getValue<bool>();
+			enableLoginVerify = CorePropertySupervisorBase::getSupervisorTableNode()
+			                        .getNode("EnableAckForStateChangesOverUDP")
+			                        .getValue<bool>();
+		}
+		catch(...)
+		{
+			;
+		}  // ignore errors
+
+		if(enableStateChanges || enableLoginVerify)
+		{
+			if(enableStateChanges)
+				__COUT_INFO__ << "Enabling state changes over UDP..." << __E__;
+			else if(enableLoginVerify)
+			{
+				__COUT_INFO__ << "Enabling this Gateway as source of primary login "
+				                 "verification over UDP..."
+				              << __E__;
+
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				loadRemoteGatewaySettings(remoteGatewayApps_);
+			}
+
+			// start state changer UDP listener thread
+			stateChangerThread_ = std::thread(
+			    [](GatewaySupervisor* s, unsigned int g) {
+				    GatewaySupervisor::StateChangerWorkLoop(s, g);
+			    },
+			    this,
+			    generation);
+		}
+		else
+		{
+			__COUT__ << "State changes over UDP are disabled." << __E__;
+			std::ofstream udpFile(GATEWAY_UDP_REMOTE_CONTROL_FILE);
+			udpFile << "disabled" << std::endl;
+		}
+	}  // end setting up thread for UDP drive of state machine
+
+	// setting up checking of App Status
+	{
+		bool checkAppStatus = false;
+		try
+		{
+			checkAppStatus = CorePropertySupervisorBase::getSupervisorTableNode()
+			                     .getNode("EnableApplicationStatusMonitoring")
+			                     .getValue<bool>();
+		}
+		catch(...)
+		{
+			;
+		}  // ignore errors
+
+		if(checkAppStatus)
+		{
+			__COUT__ << "Enabling App Status checking..." << __E__;
+
+			//make one thread for rapid status checking
+			// and one for disconnected status checking (with long timeouts)
+			appStatusThread_ = std::thread(
+			    [](GatewaySupervisor* s, unsigned int g) {
+				    GatewaySupervisor::AppStatusWorkLoop(s, g);
+			    },
+			    this,
+			    generation);
+
+			appStatusDisconnectedThread_ = std::thread(
+			    [](GatewaySupervisor* s, unsigned int g) {
+				    GatewaySupervisor::AppStatusWorkLoop(s, g, true /* doDisconnected */);
+			    },
+			    this,
+			    generation);
+		}
+		else
+		{
+			__COUT__ << "App Status checking is disabled." << __E__;
+
+			// set all app status to "Not Monitored" so that FSM changes ignore missing app status
+			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				auto appInfo = it.second;
+				allSupervisorInfo_.setSupervisorStatus(
+				    appInfo,
+				    SupervisorInfo::APP_STATUS_NOT_MONITORED,
+				    0 /* progressInteger */,
+				    "" /* detail */);
+			}
+		}
+
+	}  // end checking of Application Status
+}  // end startBackgroundWorkLoops()
+
+//==============================================================================
+/// stopBackgroundWorkLoops
+///	Tells the UDP state changer and app status threads to exit (they check the generation
+///	at every loop pass: the UDP loop at least every 2 s, the status loops every pass of
+///	~0.5 s or longer when status requests are slow) and joins them, so the UDP port is
+///	released before a new listener binds it.
+void GatewaySupervisor::stopBackgroundWorkLoops(void)
+{
+	++backgroundWorkLoopGeneration_;
+	__COUT__ << "Stopping background work loops (now generation "
+	         << backgroundWorkLoopGeneration_ << ")..." << __E__;
+	for(std::thread* th :
+	    {&stateChangerThread_, &appStatusThread_, &appStatusDisconnectedThread_})
+	{
+		if(!th->joinable())
+			continue;
+		if(th->get_id() == std::this_thread::get_id())
+			th->detach();  // cannot join self; it exits at its next loop pass
+		else
+			th->join();
+	}
+	__COUT__ << "Background work loops stopped." << __E__;
+}  // end stopBackgroundWorkLoops()
+
+//==============================================================================
 /// AppStatusWorkLoop
 ///	child thread
 void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
+                                          const unsigned int generation,
                                           const bool         doDisconnected /* = false */)
 try
 {
-	sleep(5);  // wait for apps to get started
+	// stopBackgroundWorkLoops() changes the generation: exit at the next check
+	auto stopped = [theSupervisor, generation]() {
+		return theSupervisor->backgroundWorkLoopGeneration_ != generation;
+	};
+	auto sleepUnlessStopped = [&stopped](unsigned int seconds) {
+		for(unsigned int i = 0; i < seconds * 4 && !stopped(); ++i)
+			usleep(250000);
+	};
+
+	sleepUnlessStopped(5);  // wait for apps to get started
 
 	bool   firstError = true;
 	size_t loopCount  = -1;  //first time through loop will be 0
@@ -541,7 +598,7 @@ try
 	const std::string otsdaq_var_dir  = CorePropertySupervisorBase::OTSDAQ_VAR_DIR;
 
 	if(doDisconnected)
-		sleep(5);  // stagger the two loops a bit
+		sleepUnlessStopped(5);  // stagger the two loops a bit
 	__COUTV__(doDisconnected);
 
 	std::chrono::_V2::system_clock::time_point lastStatus =
@@ -557,6 +614,12 @@ try
 
 	while(1)
 	{
+		if(stopped())
+		{
+			__COUT__ << "App status work loop (doDisconnected = " << doDisconnected
+			         << ", generation " << generation << ") exiting." << __E__;
+			return;
+		}
 		bool oneStatusReqHasFailed = false;
 
 		++loopCount;
@@ -2537,7 +2600,16 @@ try
 
 							std::string currentState =
 							    theSupervisor->theStateMachine_.getCurrentStateName();
-							if(currentState !=
+							// Shutdown/Startup stop and start the non-gateway contexts on
+							// purpose: their apps going silent then is not a crash
+							bool contextsCyclingByFSM =
+							    theSupervisor->theStateMachine_.isInTransition() &&
+							    (theSupervisor->stateMachineLastCommandInput_ ==
+							         RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
+							     theSupervisor->stateMachineLastCommandInput_ ==
+							         RunControlStateMachine::STARTUP_TRANSITION_NAME);
+							if(!contextsCyclingByFSM &&
+							   currentState !=
 							       RunControlStateMachine::FAILED_STATE_NAME &&
 							   (currentState !=
 							        RunControlStateMachine::HALTED_STATE_NAME ||
@@ -2656,10 +2728,19 @@ try
 
 							std::string currentState =
 							    theSupervisor->theStateMachine_.getCurrentStateName();
-							if(currentState !=
+							bool contextsCyclingByFSM =  // see the SOAP-error case above
+							    theSupervisor->theStateMachine_.isInTransition() &&
+							    (theSupervisor->stateMachineLastCommandInput_ ==
+							         RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
+							     theSupervisor->stateMachineLastCommandInput_ ==
+							         RunControlStateMachine::STARTUP_TRANSITION_NAME);
+							if(!contextsCyclingByFSM &&
+							   currentState !=
 							       RunControlStateMachine::FAILED_STATE_NAME &&
 							   currentState !=
 							       RunControlStateMachine::HALTED_STATE_NAME &&
+							   currentState !=
+							       RunControlStateMachine::SHUTDOWN_STATE_NAME &&
 							   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
 							{
 								__SS__
@@ -3795,7 +3876,8 @@ void GatewaySupervisor::applyContextCommonTables(
 //==============================================================================
 /// StateChangerWorkLoop
 ///	child thread
-void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
+void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor,
+                                             const unsigned int generation)
 {
 	ConfigurationTree configLinkNode =
 	    theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
@@ -3860,6 +3942,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 	while(1)
 	{
+		if(theSupervisor->backgroundWorkLoopGeneration_ != generation)
+		{
+			__COUT__ << "UDP State Changer (generation " << generation
+			         << ") exiting; releasing " << ipAddressForStateChangesOverUDP << ":"
+			         << portForStateChangesOverUDP << __E__;
+			return;  // the socket closes as it goes out of scope
+		}
+
 		// workloop procedure
 		//	if SOAPUtilities::receive a UDP command
 		//		execute command
@@ -8353,9 +8443,29 @@ try
 		makeSystemLogEntry("System starting up.");
 	RunControlStateMachine::theProgressBar_.step();
 
-	// start all non-gateway contexts
-	GatewaySupervisor::launchStartOTSCommand(
-	    "OTS_APP_STARTUP", CorePropertySupervisorBase::theConfigurationManager_);
+	// Re-align the Gateway with the active Context group without a process restart:
+	//	stop the UDP state changer and app status threads, re-initialize the
+	//	configuration manager (done by launchStartOTSCommand, which also rewrites the
+	//	XDAQ context XML), then restart the threads from the reloaded GatewaySupervisorTable
+	//	and force request permissions (supervisor properties) to be re-read on next use.
+	stopBackgroundWorkLoops();
+	try
+	{
+		// start all non-gateway contexts
+		GatewaySupervisor::launchStartOTSCommand(
+		    "OTS_APP_STARTUP", CorePropertySupervisorBase::theConfigurationManager_);
+	}
+	catch(...)
+	{
+		startBackgroundWorkLoops();  // never leave the Gateway without its UDP/status loops
+		CorePropertySupervisorBase::resetPropertiesAreSetup();
+		throw;
+	}
+	startBackgroundWorkLoops();
+	CorePropertySupervisorBase::resetPropertiesAreSetup();
+	__COUT_INFO__ << "Gateway UDP/app-status work loops restarted and request permissions "
+	                 "will be re-read from the active Context group."
+	              << __E__;
 	RunControlStateMachine::theProgressBar_.step();
 
 	// important to give time for StartOTS script to recognize command and for apps to
