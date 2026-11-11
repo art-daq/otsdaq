@@ -55,9 +55,25 @@ https://otsdaq.fnal.gov/docs/code/ (and `/docs/dev/`) is an older, manual path:
   injected HTML.
 - It is only as current as the last manual run. Nothing in CI calls it.
 
-The otsdaq.fnal.gov tutorials are separate again. The "Installing and Starting otsdaq" page
-embeds a Google Slides deck, readable as text at
-`https://docs.google.com/presentation/d/<id>/export/txt`.
+## The otsdaq.fnal.gov website and tutorials
+
+- **Source repository:** `art-daq/otsdaq-web`, which is private, so clone it over SSH. Verified
+  2026-11-11. It holds the site's `htdocs/` tree, about 640 MB, mostly old Doxygen output under
+  `htdocs/docs/`. Files reach the web host by `scp` to
+  `/pubhosting/sites/o/otsdaq.fnal.gov/htdocs/`, not by CI.
+- **Current tutorials (`tutorials_v2`):**
+  - `tutorial_db.json` lists each tutorial's name, category, Google Slides link and video link.
+    A Google spreadsheet posts it to `tutorial_db_post.php`, which runs `update_website.php`
+    on the server.
+  - That script regenerates `index.php`, `navbar.php` and one `tutorialPages/<name>.php` per
+    tutorial, each embedding the slides and video in iframes.
+  - So the generated pages exist only on the server, not in git. The live list is at
+    `https://otsdaq.fnal.gov/tutorials_v2/tutorial_db.json`.
+- **Reading a deck:** `https://docs.google.com/presentation/d/<id>/export/txt` gives the text and
+  `/export/pptx` the whole deck.
+- **Overhaul in progress (November 2026):** the tutorials are being moved to Markdown in
+  `otsdaq-web` under `htdocs/sandbox_nov2026/`, built into static HTML by `otsdaq-web/tools/`.
+  That folder's `AGENTS.md` is the guide for editing, building and deploying them.
 
 ## README markup that works in both GitHub and Doxygen
 

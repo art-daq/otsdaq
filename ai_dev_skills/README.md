@@ -8,7 +8,7 @@ Each file says what was verified and when, and what is still unverified.
 
 | Skill | Use it to |
 |-------|-----------|
-| [readme-and-doc-publishing.md](readme-and-doc-publishing.md) | change the otsdaq README or Doxygen front page; how the README becomes the Doxygen site at art-daq.github.io/otsdaq_doxygen (CI, hourly publish, no release step); the separate manual otsdaq.fnal.gov doc push; README markup that renders in both GitHub and Doxygen; where the install instructions live |
+| [readme-and-doc-publishing.md](readme-and-doc-publishing.md) | change the otsdaq README or Doxygen front page; how the README becomes the Doxygen site at art-daq.github.io/otsdaq_doxygen (CI, hourly publish, no release step); the separate manual otsdaq.fnal.gov doc push; the otsdaq.fnal.gov website repo (`otsdaq-web`) and tutorial pipeline, including the Markdown tutorial overhaul; README markup that renders in both GitHub and Doxygen; where the install instructions live |
 
 ## Keeping this index current
 
