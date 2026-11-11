@@ -4,7 +4,7 @@ A placeholder front-end plugin (`FESunrockInterface`) for the Sunrock hardware, 
 in a separate XDAQ context with its own FE Supervisor so it can be started, stopped
 and failed independently of the UDP emulator front-end. Written to be improved
 incrementally: each step says what is **done**, and what is still **unverified**
-(none of this code had been compiled or run when it was written).
+(verified end to end on 2026-11-10, see Checks).
 
 Related skills: `configgui-udp.md` (all config edits below go through it),
 `gateway-udp-fsm.md` (Configure/Start/Halt), `macromaker-udp.md` (FE macros and
@@ -101,24 +101,33 @@ An earlier build of the plugin from otsdaq-components may have left
 `libFESunrockInterface.so` in `local/install/lib`; the new package installs over the same
 file names, so no cleanup is needed.
 
-## Checks (all unverified)
+## Checks (verified 2026-11-10, lite build)
 
-- `ots` prints `Launching 1 additional local non-Gateway Context procesess`; a second
-  `xdaq.exe ... -p 2016` runs and its log is `Data/Logs/otsdaq_quiet_run-<host>-2016.txt`.
-- The main context log shows `registered N remote applications of context
-  http://<host>:2016`, and the second context's log shows the main context's apps
-  registered as remote.
-- Gateway status (`GetRemoteAppStatus`) lists `SunrockFESupervisor`; Configure/Start/Halt
-  over Gateway UDP take it through the states. Failure text names the remote context
-  (`cannot connect to remote context ...`) if the second process is not up.
-- `ots_mm_udp_test <ip> 2011` lists `SunrockInterface0`; its FE macros `sunrockStatus`
-  and `sunrockSetValue` run; `r`/`w` on `SunrockInterface0` hit the simulated registers.
-- Stop the emulator FE (or its context) and confirm the Sunrock FE still configures.
+Configuration as applied: Configuration `defaultConfig` key 5 (FEInterfaceTable v3,
+FESupervisorTable v3, FESunrockInterfaceTable v0), Context `testContext` key 11
+(XDAQApplicationTable v5, XDAQContextTable v4; application Id 211), Backbone key 7
+(alias `defaultSystemAlias` -> `defaultConfig` 5). The first version of
+FESunrockInterfaceTable was created with `saveSpecificTable` and CSV data (see
+`configgui-udp.md`, "First version of a brand-new table").
+
+- `ots` printed `Launching 1 additional local non-Gateway Context procesess` and
+  `Verified successful ots non-gateway context <host>-2016 launch`; `xdaq.exe -p 2016` runs,
+  log `Data/Logs/otsdaq_quiet_run-<host>-2016.txt`.
+- Main context log: `registered 1 remote applications of context http://<host>:2016`;
+  Sunrock context log: `registered 8 remote applications of context http://<host>:2015`.
+- Gateway `GetRemoteAppStatus` lists `SunrockFESupervisor` (url :2016). Configure over
+  Gateway UDP reached Configured for Supervisor, FESupervisor and SunrockFESupervisor
+  (remote SOAP works); the 2016 log shows `Done Configuring interface SunrockInterface0`.
+- MacroMaker lists `SunrockInterface0`; FE macro `sunrockStatus` returns the placeholder
+  status; `w 0x40 0x1234` then `r 0x40` reads back `...1234`; each Zynq access logs the
+  ssh command it would run (`would run: ssh ... root@<ZynqHostName> 'devmem 0x40'`).
+- Not yet checked: Start/Halt with the Sunrock FE, and the Sunrock FE surviving the
+  emulator FE failing.
 
 ## Known risks / next steps
 
-- Not compiled. Likely first-build problems: the new `postSOAP` socket code in
-  `XdaqLite.cc`, and the `FEVInterface` macro usage in the plugin.
+- `mz_uc` regenerates `setup_ots.sh` from the installer and drops hand-added exports
+  (e.g. the `OTS_*_UDP_*` remote-control variables); re-add them afterwards.
 - Remote SOAP is a minimal blocking HTTP client (20 minute timeout, one connection per
   message); fine for FSM commands, not tuned for chatty traffic.
 - Only the lite executive was changed; the full-XDAQ build already supports multiple

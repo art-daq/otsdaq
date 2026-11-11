@@ -210,6 +210,24 @@ Notes from a real run (Visualizer window parameter, `mode=waveform`):
 - Read the result back with `getTreeView ... startPath=/<Table>/<UID>/<LinkColumn>`
   before activating: a link edit shows as the linked rows under that path.
 
+### First version of a brand-new table (no saved versions yet)
+
+Tree edits cannot start from the empty template: `saveTreeNodeEdit ... targetTableVersion=-1`
+fails with `Invalid latest version`. Create version 0 with `saveSpecificTable` from the
+template (`version=-1`) and the rows as data, exactly as the browser table editor does:
+
+```bash
+ots_cfg_udp_test 127.0.0.1 2010 saveSpecificTable tableName=FESunrockInterfaceTable \
+    version=-1 temporary=0 dataOffset=0 sourceTableAsIs=0 lookForEquivalent=0 \
+    tableComment=First%20version \
+    "data=SunrockInterface0,sunrock-zynq.placeholder,root,22,5,5,My%20comment,;"
+```
+
+`data`: each cell URI-encoded and followed by `,`; each row ends with `;`. All columns in
+order, including `CommentDescription`; the last two (Author, RecordInsertionTime) are
+filled in automatically and may be omitted. Then add the new table as an extra
+`name,version,` pair in the group's `tableList`.
+
 ### Example: pass window parameters to a Desktop icon (Context group)
 
 The Visualizer page reads `mode` from its window parameters (`Visualization.html`:
