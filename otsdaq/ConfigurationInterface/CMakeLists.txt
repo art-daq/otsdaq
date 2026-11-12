@@ -55,5 +55,8 @@ artdaq-database::ConfigurationDB
 
 cet_build_plugin(File otsdaq::configInterface)
 
+# plain text store (textdb://), no third-party dependencies
+cet_build_plugin(Text otsdaq::configInterface)
+
 install_headers()
 install_source()

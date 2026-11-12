@@ -62,6 +62,13 @@ public:
 	virtual std::pair<std::string, TableVersion>	saveCustomJSON			(const std::string& JSON, const std::string& documentNameToSave) const { __COUTV__(JSON);  __COUTV__(documentNameToSave); return std::make_pair("",TableVersion());}
 	virtual std::string 					loadCustomJSON					(const std::string& documentNameToLoad, TableVersion documentVersionToLoad) const {__COUTV__(documentNameToLoad); __COUTV__(documentVersionToLoad); return "{}";};
 
+	/// copy a stored table version as text, without the table schema (used to convert between stores)
+	std::string 							loadRawTableJSON				(const std::string& tableName, TableVersion version) const;
+	void 									saveRawTableJSON				(const std::string& tableName, TableVersion version, const std::string& json, bool overwrite = false) const;
+
+	/// plugin chosen for CONFIGURATION_MODE::ARTDAQ_DATABASE from the ARTDAQ_DATABASE_URI scheme: "Text" for textdb://, else "Database"
+	static std::string						getDatabasePluginName			(void);
+
 
 protected:
 	virtual void 							fill							(TableBase* table, TableVersion version) const = 0;

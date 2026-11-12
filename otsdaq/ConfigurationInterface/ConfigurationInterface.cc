@@ -6,6 +6,7 @@
 
 #include <dirent.h>
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
 #include <typeinfo>
 
@@ -36,7 +37,8 @@ ConfigurationInterface* ConfigurationInterface::getInstance(
 		return theInstance_;
 	}
 
-	auto instanceType = (mode == CONFIGURATION_MODE::XML_FILE) ? "File" : "Database";
+	std::string instanceType =
+	    (mode == CONFIGURATION_MODE::XML_FILE) ? "File" : getDatabasePluginName();
 	if(theMode_ != mode)
 	{
 		delete theInstance_;
@@ -50,6 +52,53 @@ ConfigurationInterface* ConfigurationInterface::getInstance(
 	theMode_ = mode;
 	return theInstance_;
 }  //end getInstance()
+
+//==============================================================================
+/// getDatabasePluginName
+///	The database mode serves both stores; the URI scheme picks the plugin:
+///		textdb://<path>			-> "Text" (plain text files, Text_configInterface)
+///		anything else			-> "Database" (artdaq-database, e.g. filesystemdb://<path>)
+std::string ConfigurationInterface::getDatabasePluginName(void)
+{
+	const char* uri = getenv("ARTDAQ_DATABASE_URI");
+	if(uri && std::string(uri).rfind("textdb://", 0) == 0)
+		return "Text";
+	return "Database";
+}  // end getDatabasePluginName()
+
+//==============================================================================
+/// loadRawTableJSON
+///	Returns the stored text of a table version exactly as the store holds it, without
+///	needing the table schema. Uses a special JSONDoc_ table, whose views pass their
+///	text through printJSON/fillFromJSON unchanged, renamed to the real table name after
+///	its view exists so the store reads the real table's entry.
+std::string ConfigurationInterface::loadRawTableJSON(const std::string& tableName,
+                                                     TableVersion       version) const
+{
+	TableBase rawTable(true /*special table*/,
+	                   TableBase::JSON_DOC_PREPEND + "RawTableCopy");
+	rawTable.changeVersionAndActivateView(rawTable.createTemporaryView(), version);
+	rawTable.setTableName(tableName);  // view keeps the pass-through name
+	fill(&rawTable, version);
+	return rawTable.getViewP()->getCustomStorageData();
+}  // end loadRawTableJSON()
+
+//==============================================================================
+/// saveRawTableJSON
+///	Stores text as the given table version, without needing the table schema
+///	(see loadRawTableJSON).
+void ConfigurationInterface::saveRawTableJSON(const std::string& tableName,
+                                              TableVersion       version,
+                                              const std::string& json,
+                                              bool               overwrite) const
+{
+	TableBase rawTable(true /*special table*/,
+	                   TableBase::JSON_DOC_PREPEND + "RawTableCopy");
+	rawTable.changeVersionAndActivateView(rawTable.createTemporaryView(), version);
+	rawTable.getViewP()->setCustomStorageData(json);
+	rawTable.setTableName(tableName);  // view keeps the pass-through name
+	saveActiveVersion(&rawTable, overwrite);
+}  // end saveRawTableJSON()
 
 //==============================================================================
 bool ConfigurationInterface::isVersionTrackingEnabled()
