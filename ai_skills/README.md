@@ -9,6 +9,7 @@ Knowledge about maintaining the project itself (README, documentation publishing
 | Skill | Use it to |
 |-------|-----------|
 | [ots-lite-architecture.md](ots-lite-architecture.md) | understand OTS_LITE: repos, XdaqLite, what is not built (artdaq), multi-context support, `mb`/`mz`/`mz_uc`, scripted `ots` start/stop, `#ifdef OTS_LITE` guards |
+| [ots-maxlite-architecture.md](ots-maxlite-architecture.md) | understand OTS_MAXLITE (embedded/SoC build): install, run-time dependencies, what replaces TRACE/messagefacility/cetlib/fhiclcpp/Boost, the `textdb://` configuration store and `otsdaq_convert_config_db`, open items |
 | [development-workflow.md](development-workflow.md) | follow the edit/commit/build/test cycle and the rules for AI agents; helper-script pitfalls |
 | [configgui-udp.md](configgui-udp.md) | change configuration remotely, without DB access: read tables/tree, edit values, links and rows, create a table's first version, new groups, activate, Backbone aliases, Desktop icons |
 | [gateway-udp-fsm.md](gateway-udp-fsm.md) | drive the Gateway state machine (Configure/Start/Halt/Shutdown/Startup) and read status/icons over UDP with `ots_drive_udp_test`; enabling it; alias/Backbone pitfalls; **which restart a Context change needs** (total restart vs Shutdown/Startup vs App Status relaunch) and what each renews |
