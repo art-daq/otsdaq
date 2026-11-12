@@ -12,7 +12,7 @@ Run either one-line command in a new, empty directory that is not inside a git c
 Neither needs root. If system packages are missing, the script stops and prints the exact
 `dnf` or `apt` command for an administrator to run, then you rerun the same line.
 
-**otsdaq lite**, about 5 minutes: no Spack, CVMFS, xdaq or artdaq; plain CMake and gcc.
+**otsdaq lite**, 5-10 minutes: no Spack, CVMFS, xdaq or artdaq; plain CMake and gcc.
 See [lite-quick-install-readme.md](https://github.com/art-daq/otsdaq-demo/blob/develop/lite-quick-install-readme.md) for requirements and details.
 
     mkdir ots && cd ots && wget https://raw.githubusercontent.com/art-daq/otsdaq-demo/develop/tools/ots-quick-lite-start.sh && chmod +x ots-quick-lite-start.sh && ./ots-quick-lite-start.sh
