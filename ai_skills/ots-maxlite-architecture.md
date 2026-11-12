@@ -6,7 +6,13 @@ Supervisors, web desktop) without TRACE, messagefacility, cetlib, fhiclcpp, Boos
 artdaq-database, ZeroMQ, CURL or Python.
 
 Branch: `feature/ots-maxlite` in otsdaq, otsdaq-utilities, otsdaq-components, otsdaq-demo
-(otsdaq-td-ims-asic: `develop`).
+(otsdaq-td-ims-asic: `develop`). As of 2026-11-12 the branch exists only in the developer's
+local clones (not on GitHub), so installs use `--repo-base <local dir with the repos>`.
+
+Status 2026-11-12, all on x86_64 (first_demo tutorial): install and compile, Wiz mode, normal
+mode, ConfigGUI/MacroMaker/Gateway UDP remote controls, configuration edits saved to the text
+store, Configure/Start, emulator data to the Visualizer (`getWaveformData` live samples), web
+Console receiving. Not yet: an ARM build, a run on an SoC.
 
 ## Install
 
@@ -18,7 +24,48 @@ source setup_ots.sh
 ```
 
 `setup_ots.sh` exports `OTS_LITE=1` and `OTS_MAXLITE=1`; `mb`, `mz` and `mz_uc` work as in lite
-(`mz_uc` reruns `ots-quick-maxlite-start.sh`).
+(`mz_uc` reruns `ots-quick-maxlite-start.sh`). The installer:
+
+- checks only for OpenSSL (`openssl/sha.h`), Threads and Xerces-C (builds Xerces-C without ICU
+  if the OS has none) and the shell tools; it downloads cmake 4.4.4 if the system cmake is
+  older than 3.29;
+- builds cetmodules (CMake functions only) and the otsdaq repos; no cet libraries, TRACE,
+  artdaq-database, ZeroMQ or Catch2;
+- installs the first_demo tutorial `Data/` and its database in `databases/filesystemdb/`
+  (artdaq-database format), and creates an empty text store `databases/textdb/test_db`, which
+  `ARTDAQ_DATABASE_URI` points at (see "Configuration: text store" to fill it).
+
+## First run, step by step (verified 2026-11-12)
+
+On a host where another otsdaq may run, give maxlite its own ports first; `ots -k` only stops
+processes of this area (`$USER_DATA/` in their command line), but the emulator port and the
+data ports of the tutorial configuration (4000, 4001, 4005, 4100, 4101) are fixed in the
+database, so only one system can use them at a time.
+
+```bash
+cd ots-maxlite
+# in setup_ots.sh (user's choice, off by default): own main port and UDP remote controls
+#   export OTS_MAIN_PORT=5015
+#   export OTS_CONFIG_UDP_IP=127.0.0.1;     export OTS_CONFIG_UDP_PORT=5010
+#   export OTS_MACROMAKER_UDP_IP=127.0.0.1; export OTS_MACROMAKER_UDP_PORT=5011
+# fill the text store from the tutorial database (from any ots lite install of this branch):
+( cd <lite area> && source setup_ots.sh && otsdaq_convert_config_db \
+    filesystemdb://$PWD/../ots-maxlite/databases/filesystemdb/test_db \
+    textdb://$PWD/../ots-maxlite/databases/textdb/test_db --verify )
+source setup_ots.sh
+ots -w                                   # Wiz mode: prints the URL with the access code
+ots_cfg_udp_test -y 127.0.0.1 5010 getActiveTableGroups   # reads the text store
+echo Y | ots -k
+ots                                      # normal mode
+ots_udp_hw_emulator 4000 &
+```
+
+For the waveform demo (Gateway UDP, `RawDataVisualizerConsumer`, `mode=waveform`) follow
+[tutorial-to-visualizer-waveforms.md](tutorial-to-visualizer-waveforms.md), "Doing Steps 1-5
+with the helper scripts"; use a Gateway UDP port of your own (5014 was used).
+
+Check the run-time libraries of an install with
+`../ai_scripts/check_maxlite_libraries.sh <install>/local/install`.
 
 Verified 2026-11-12 (x86_64, AlmaLinux 9, 24 cores, gcc-toolset-13): clean install including the
 compile of all repos in **117-140 s** (xerces-c 16 s when the OS lacks it, cetmodules 0 s,
@@ -51,6 +98,10 @@ installer into `local/install`).
 | FE metric manager parameter set | fhicl (already disabled in lite) | compiled out |
 | ECLWriter (electronic logbook) | built if CURL+XSD | not built |
 | XdaqLite messagefacility destinations (`OTS`, `UDP`) | built | not built |
+| Web Console messages | messagefacility `UDP` destination (lite's stand-in discards them) | `OtsLog` sends them (see "Web Console") |
+| `ots -t*` TRACE options, `tonS`, `trace_cntl`, `TRACE_FILE` | TRACE shell functions | not available; the `ots` script skips them when absent |
+| Database URI types accepted by `ots` | `filesystemdb`, `mongodb` | also `textdb` |
+| Plugins of other repos (FE interfaces, tables) | link cetlib/fhiclcpp | link nothing extra; same `cet_build_plugin` CMake |
 
 Pattern used in sources: `#ifdef OTS_MAXLITE` / `#ifndef OTS_MAXLITE`; `OTS_MAXLITE` always comes
 with `OTS_LITE`. The `Macros` target carries `OTS_LITE OTS_MAXLITE` as public compile
@@ -130,7 +181,9 @@ Do not use `reset_ots_tutorial.sh` in maxlite: its `get_tutorial_data.sh` accept
 
 ## Open items
 
-- Tutorial database for maxlite (convert once and ship, or convert during install).
-- Running ots in maxlite (not yet tried): `tools/ots` still calls TRACE shell commands
-  (`tonS`, `trace_cntl`, `setupTrace`) and starts `otsConsoleFwd`; these need maxlite guards.
-- Cross compiling for aarch64 and 32-bit ARM (toolchain files, installer `--arch`).
+- Tutorial database for maxlite (convert once and ship a text copy, or convert during install).
+- Cross compiling for aarch64 and 32-bit ARM (toolchain files, installer `--arch`), then a run
+  on an SoC.
+- ots lite from this branch: builds (2026-11-12); not yet run in Wiz/normal mode. Full (Spack)
+  build not compiled.
+- Console burst loss at Configure (kernel `rmem_max`, see "Web Console").

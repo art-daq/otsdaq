@@ -1,5 +1,8 @@
 # otsdaq Lite Architecture
 
+For the further-reduced embedded build (no TRACE, messagefacility, cetlib, fhiclcpp, Boost,
+artdaq-database, ZeroMQ) see [ots-maxlite-architecture.md](ots-maxlite-architecture.md).
+
 ## What is OTS_LITE?
 
 When the environment variable `OTS_LITE=1` is set, otsdaq builds without
