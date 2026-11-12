@@ -148,7 +148,8 @@ with the helper scripts").
 
 ## Configuration export and import
 
-Verified 2026-11-12 in maxlite (scratch stores, never the running one):
+How-to between store types: [config-store-conversion.md](config-store-conversion.md) and
+`../ai_scripts/convert_config_store.sh`. Verified 2026-11-12 in maxlite (scratch stores, never the running one):
 
 - `otsdaq_import_system_aliases.sh EXPORT_ONLY <URI> <USER_DATA>` exports the active groups and
   system aliases to `./tmp/export_system_aliases/<Group>_<key>/<Table>_v<N>.json` (3 groups, 26
