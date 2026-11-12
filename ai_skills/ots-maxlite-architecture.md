@@ -183,6 +183,17 @@ at `net.core.rmem_max` (212992 here), so the forwarder drops a burst of several 
 lines. Raising `net.core.rmem_max` (root) removes it; the same limit applies to
 messagefacility's UDP destination.
 
+Console receive thread (fixed 2026-11-12, all builds): the receive loop ended ("Unknown error
+caught at Console Supervisor thread") and the Console got nothing until ots restarted. Cause: a log
+line containing NUL bytes (the UDP data listener's "Received data IP: ... port: ..." debug line
+prints raw address bytes) split its packet; the fragment after the NUL had no fields and
+`ConsoleMessageStruct`'s `fields.at()` threw `std::out_of_range`, which the loop did not catch.
+Now every field exists (empty if not parsed), lines without a timestamp are kept as plain text,
+non-numeric ids read as 0, each message is parsed in its own try (a failure is reported and
+skipped), and OtsLog sends a NUL as the two characters `\0`. Verified: lines with a NUL, without a
+timestamp, with too few fields and with non-numeric ids, then a valid pair whose sequence gap the
+Console reported; an Iterator 2-run plan afterwards with no Console thread error.
+
 ## Visualizer waveforms
 
 Verified 2026-11-12 with first_demo in maxlite: Configure/Start over Gateway UDP, emulator sine
@@ -269,7 +280,3 @@ Do not use `reset_ots_tutorial.sh` in maxlite: its `get_tutorial_data.sh` accept
 - ots lite from this branch: builds (2026-11-12); not yet run in Wiz/normal mode. Full (Spack)
   build not compiled.
 - Console burst loss at Configure (kernel `rmem_max`, see "Web Console").
-- Console receive thread ended once (16:35:27 on 2026-11-12, during an Iterator Stop) with an
-  exception that is not a `std::runtime_error` ("Unknown error caught at Console Supervisor
-  thread"); the Console then receives nothing until ots restarts. Suspect the message parser
-  (`ConsoleMessageStruct`, rewritten without Boost) on one line; not yet investigated.

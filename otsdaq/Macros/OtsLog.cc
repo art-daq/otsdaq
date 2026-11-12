@@ -196,7 +196,13 @@ struct ConsoleSender
 		msg += '|';
 		msg += std::to_string(line);
 		msg += '|';
-		msg.append(text, 0, textEnd);
+		// a NUL byte would split the packet into two Console messages (the second one
+		// without fields): send it as the two characters backslash and 0
+		for(size_t i = 0; i < textEnd; ++i)
+			if(text[i] == '\0')
+				msg += "\\0";
+			else
+				msg += text[i];
 
 		// the Console checks that each process's sequence numbers arrive in order
 		std::lock_guard<std::mutex> lock(sendMutex);
