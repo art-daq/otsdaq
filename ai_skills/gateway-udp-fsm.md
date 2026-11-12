@@ -144,6 +144,27 @@ Every failure met on the way (missing alias parameter, emulator down, ROOT consu
 not built in lite, alias pointing at the old group) is listed under Troubleshooting
 below with its cause.
 
+## Iterator over Gateway UDP (since 2026-11-12)
+
+`Iterator,<command>[,<parameter>]` passes the browser Iterate window's commands to the Gateway's
+Iterator and replies with its XML (send with `ots_drive_udp_test <ip> <port> raw "..."`):
+
+| Command | Parameter |
+|---------|-----------|
+| `iteratePlay` | iteration plan name (an `IterationPlanTable` record) |
+| `iteratePlayGenerated` | `<fsm>;<alias>;<seconds per run>;<runs>;<keepConfiguration 0/1>;<log entry>` (`;` instead of `,`; log entry URI-encoded twice) |
+| `iteratePause`, `iterateHalt` | none |
+| `getIterationPlanStatus` | none; fields `current_state`, `active_plan`, `active_plan_status`, `current_command_index`/`current_number_of_commands`, `current_command_type`, `current_command_iteration`, `error_message`, `last_finished_plan` |
+
+As in the browser, the Iterator may not take over a state machine another window drives (the
+UDP state changer itself is allowed). A generated plan needs no plan tables: Configure with the
+alias, then `<runs>` runs of `<seconds>` (Start, wait, Stop).
+
+Verified in ots maxlite 2026-11-12 with two contexts (main + `sunrockContext`):
+`raw "Iterator,iteratePlayGenerated,PhysicsRuns0;litedefaultSystemAlias;10;2;0;maxlite%2520iterator%2520test"`
+ran Configure, Start, Stop, Start, Stop in all applications of both contexts and finished in
+~27 s (`last_finished_plan=---GENERATED_PLAN---`, state Configured).
+
 ## Troubleshooting
 
 - `Skipping potential FSM Command because enableStateChanges=false`: enable flag

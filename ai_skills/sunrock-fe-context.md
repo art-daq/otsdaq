@@ -124,6 +124,14 @@ FESunrockInterfaceTable was created with `saveSpecificTable` and CSV data (see
 - 2026-11-11: Configure, Start, Stop and Halt with `ots_drive_udp_test` all reached their
   states (the Gateway reports a state only once every supervisor, including
   `SunrockFESupervisor` on :2016, reached it).
+- 2026-11-12, ots maxlite (otsdaq-td-ims-asic cloned into `srcs/`, built, table XML copied to
+  `Data/TableInfo`): the configuration was not re-entered but imported from ots-lite-test with
+  `ai_scripts/convert_config_store.sh active` (artdaq-database -> text store, `--prepend lite`;
+  alias `litedefaultSystemAlias`). After activating the imported Context, the **second** `ots`
+  launch started the 2016 context (the first launch still used the old `ots.xml` layout). Both
+  contexts registered each other's apps; Configure/Start/Stop/Halt over Gateway UDP; MacroMaker
+  lists `SunrockInterface0`, `sunrockStatus` returns the placeholders, `w 0x40 0x1234` reads back;
+  an Iterator generated plan (2 runs) ran in both contexts.
 - Not yet checked: the Sunrock FE surviving the emulator FE failing.
 
 ## Known risks / next steps

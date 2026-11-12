@@ -13,7 +13,8 @@ Status 2026-11-12, all on x86_64 (first_demo tutorial): install and compile, Wiz
 mode, ConfigGUI/MacroMaker/Gateway UDP remote controls, configuration edits saved to the text
 store, Configure/Start, emulator data to the Visualizer (`getWaveformData` live samples), web
 Console receiving. State machine: Configure/Start/Pause/Resume/Stop/Halt/Shutdown/Startup, and Startup
-applying a Gateway UDP port change (see `gateway-udp-fsm.md`). ARM: cross-compiled for aarch64 and 32-bit ARM (armhf), see "Cross compiling
+applying a Gateway UDP port change (see `gateway-udp-fsm.md`). Two contexts in two processes (Sunrock FE,
+`sunrock-fe-context.md`); the Iterator (generated plan over Gateway UDP). ARM: cross-compiled for aarch64 and 32-bit ARM (armhf), see "Cross compiling
 for ARM". Not yet: running on an ARM board.
 
 ## Install
@@ -268,3 +269,7 @@ Do not use `reset_ots_tutorial.sh` in maxlite: its `get_tutorial_data.sh` accept
 - ots lite from this branch: builds (2026-11-12); not yet run in Wiz/normal mode. Full (Spack)
   build not compiled.
 - Console burst loss at Configure (kernel `rmem_max`, see "Web Console").
+- Console receive thread ended once (16:35:27 on 2026-11-12, during an Iterator Stop) with an
+  exception that is not a `std::runtime_error` ("Unknown error caught at Console Supervisor
+  thread"); the Console then receives nothing until ots restarts. Suspect the message parser
+  (`ConsoleMessageStruct`, rewritten without Boost) on one line; not yet investigated.
