@@ -146,6 +146,32 @@ burst over MacroMaker UDP, `getWaveformData` returns `source=live` samples (see
 [tutorial-to-visualizer-waveforms.md](tutorial-to-visualizer-waveforms.md), "Doing Steps 1-5
 with the helper scripts").
 
+## Configuration export and import
+
+Verified 2026-11-12 in maxlite (scratch stores, never the running one):
+
+- `otsdaq_import_system_aliases.sh EXPORT_ONLY <URI> <USER_DATA>` exports the active groups and
+  system aliases to `./tmp/export_system_aliases/<Group>_<key>/<Table>_v<N>.json` (3 groups, 26
+  files from the tutorial store). The export is format-neutral: a `textdb://` export imports
+  into an artdaq-database store with lite tools, and a lite (`filesystemdb://`) export imports
+  into a maxlite text store; both directions verified.
+- `otsdaq_import_groups_from_export_path <export dir> [prepend]` imports into the current
+  `ARTDAQ_DATABASE_URI`/`USER_DATA`: either merging into valid active groups (new keys, aliases
+  kept), or into a fresh store when `Data/ServiceData/ActiveTableGroups.cfg` is removed (it then
+  creates an empty Backbone, imports, and remaps the aliases to the new keys). All 22 imported
+  tables matched the exported rows. A target whose active groups file names groups that are not
+  in its database is refused ("Did not find valid active groups ...") by design.
+- `ots_table_download_csv <table> <version> <file>` / `ots_table_upload_csv <table> <file>`:
+  an unchanged CSV is recognized as the existing version (no new version), a changed one is
+  saved as the next version. The upload needs `OTS_KCACHE_USER` (set it from `klist`, as
+  `otsdaq-utilities/tools/ots_table_update_cells.sh` does); the saved AUTHOR is the tool's
+  `export_admin`, in all builds.
+
+Fixed on the way (all builds): `XDAQContextTable.cc` was compiled twice (its library and, by
+`cet_build_plugin`'s default `<name>.cc`, an implementation library of its plugin), and the two
+copies of a static map were destroyed twice at exit (`double free or corruption` after a fresh
+import in maxlite). The source is now `XDAQContextTableImpl.cc`, like `DesktopIconTableImpl.cc`.
+
 ## Configuration: text store
 
 `ARTDAQ_DATABASE_URI=textdb://<path>` selects the `Text` plugin
