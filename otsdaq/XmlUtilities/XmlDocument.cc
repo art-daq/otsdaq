@@ -1,5 +1,6 @@
 #include "otsdaq/XmlUtilities/XmlDocument.h"
 #include "otsdaq/Macros/CoutMacros.h"
+#include "otsdaq/XmlUtilities/XercesPlatform.h"  // thread-safe Xerces Initialize/Terminate
 #include "otsdaq/Macros/MessageTools.h"
 #include "otsdaq/Macros/StringMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
@@ -145,7 +146,7 @@ void XmlDocument::initPlatform(void)
 {
 	try
 	{
-		xercesc::XMLPlatformUtils::Initialize();  // Initialize Xerces infrastructure
+		ots::XercesPlatform::initialize();  // Initialize Xerces infrastructure
 		                                          //__COUT__ << "Initialized new
 		                                          // theDocument_" << std::endl;
 	}
@@ -173,7 +174,7 @@ void XmlDocument::terminatePlatform(void)
 
 	try
 	{
-		xercesc::XMLPlatformUtils::Terminate();  // Terminate after release of memory
+		ots::XercesPlatform::terminate();  // Terminate after release of memory
 	}
 	catch(xercesc::XMLException& e)
 	{

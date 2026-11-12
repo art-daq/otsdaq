@@ -268,5 +268,14 @@ Shutdown ended in `Failed` (false crash) and Startup was rejected from `Initial`
 Not tested: that a *changed* Gateway permission takes effect (needs an authenticated browser
 request); only that the properties are reloaded during Startup.
 
-Tip: when you send Startup to a Gateway whose UDP port is changing, use
-`ots_drive_udp_test <ip> <oldPort> <FSM> Startup --no-wait` and follow the status on the new port.
+Since 2026-11-12 `ots_drive_udp_test ... Startup` follows a moved port itself: when the old
+address stops answering it reads `$USER_DATA/ServiceData/GatewayUDPRemoteControl.dat` (written by
+the Gateway when the listener is bound) and polls the new address ("moved from 127.0.0.1 5014 to
+127.0.0.1 5017; following it"). It also keeps polling through the ~2 s with no reply while the
+listener restarts, and allows 60 s (not 10 s) of unchanged status for Startup/Shutdown before
+calling the command rejected (Startup stays `Shutdown` while it relaunches contexts).
+
+Verified in ots maxlite 2026-11-12 (first_demo, one context), all over Gateway UDP with
+`ots_drive_udp_test`: Configure, Start, Pause, Resume, Stop, Start, Stop, Halt, Configure, Halt
+(3 s each), Shutdown (8 s), Startup (15 s), then the full cycle again; Startup with the port changed
+5014 -> 5017 and back moved the listener both ways with the same Gateway process (no restart).

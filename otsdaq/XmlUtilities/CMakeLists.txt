@@ -1,6 +1,6 @@
 
 cet_make_library(LIBRARY_NAME XmlUtilities
-	SOURCE ConvertFromXML.cc ConvertToXML.cc DOMTreeErrorReporter.cc HttpXmlDocument.cc XmlDocument.cc
+	SOURCE ConvertFromXML.cc ConvertToXML.cc DOMTreeErrorReporter.cc HttpXmlDocument.cc XmlDocument.cc XercesPlatform.cc
 	LIBRARIES PUBLIC
       XercesC::XercesC
 	 LIBRARIES PRIVATE

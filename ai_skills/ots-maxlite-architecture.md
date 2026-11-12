@@ -12,7 +12,8 @@ local clones (not on GitHub), so installs use `--repo-base <local dir with the r
 Status 2026-11-12, all on x86_64 (first_demo tutorial): install and compile, Wiz mode, normal
 mode, ConfigGUI/MacroMaker/Gateway UDP remote controls, configuration edits saved to the text
 store, Configure/Start, emulator data to the Visualizer (`getWaveformData` live samples), web
-Console receiving. ARM: cross-compiled for aarch64 and 32-bit ARM (armhf), see "Cross compiling
+Console receiving. State machine: Configure/Start/Pause/Resume/Stop/Halt/Shutdown/Startup, and Startup
+applying a Gateway UDP port change (see `gateway-udp-fsm.md`). ARM: cross-compiled for aarch64 and 32-bit ARM (armhf), see "Cross compiling
 for ARM". Not yet: running on an ARM board.
 
 ## Install
@@ -187,6 +188,17 @@ Verified 2026-11-12 with first_demo in maxlite: Configure/Start over Gateway UDP
 burst over MacroMaker UDP, `getWaveformData` returns `source=live` samples (see
 [tutorial-to-visualizer-waveforms.md](tutorial-to-visualizer-waveforms.md), "Doing Steps 1-5
 with the helper scripts").
+
+## Xerces-C thread safety (fixed 2026-11-12, all builds)
+
+The Gateway crashed (SIGSEGV in `xercesc::XMLMutex::lock` from `XmlDocument::initDocument`)
+after ~20 min of a browser polling the Visualizer. Every `XmlDocument` (one per HTTP reply),
+`TableInfoReader` and `ConfigurationHandler` calls `XMLPlatformUtils::Initialize()`/`Terminate()`,
+whose reference count Xerces does not protect, and XdaqLite answers each HTTP connection in its own
+thread: concurrent replies corrupted the count, it reached zero and Xerces freed its global
+mutexes. All calls now go through `ots::XercesPlatform::initialize()/terminate()`
+(`otsdaq/XmlUtilities/XercesPlatform.h`, one process-wide lock). Verified: 152181
+`getWaveformData` requests from 16 parallel clients in 60 s, all HTTP 200, Gateway alive.
 
 ## Configuration export and import
 

@@ -1,6 +1,7 @@
 #include "otsdaq/TableCore/TableInfoReader.h"
 
 #include "otsdaq/Macros/StringMacros.h"
+#include "otsdaq/XmlUtilities/XercesPlatform.h"  // thread-safe Xerces Initialize/Terminate
 #include "otsdaq/XmlUtilities/ConvertFromXML.h"
 #include "otsdaq/XmlUtilities/DOMTreeErrorReporter.h"
 
@@ -92,7 +93,7 @@ void TableInfoReader::initPlatform(void)
 {
 	try
 	{
-		xercesc::XMLPlatformUtils::Initialize();  // Initialize Xerces infrastructure
+		ots::XercesPlatform::initialize();  // Initialize Xerces infrastructure
 	}
 	catch(xercesc::XMLException& e)
 	{
@@ -107,7 +108,7 @@ void TableInfoReader::terminatePlatform(void)
 {
 	try
 	{
-		xercesc::XMLPlatformUtils::Terminate();  // Terminate after release of memory
+		ots::XercesPlatform::terminate();  // Terminate after release of memory
 	}
 	catch(xercesc::XMLException& e)
 	{
