@@ -181,9 +181,11 @@ log_label=""
 
 
 
-#at least enable messages from self
-tonS 0-9 -N ots
-tonS 0-9 -N ots_remote_start
+#at least enable messages from self (TRACE shell functions; absent in ots maxlite, which has no TRACE)
+if type tonS >/dev/null 2>&1; then
+	tonS 0-9 -N ots
+	tonS 0-9 -N ots_remote_start
+fi
 
 # OTS_SETUP_TYPE must come from the environment (set by `source setup_ots.sh <type>`
 # and propagated via ssh args to remote starts). Do NOT auto-recover from
@@ -1258,6 +1260,13 @@ elif [ "x$ARTDAQ_DATABASE_TYPE" == "xmongodb" ]; then
 
 	if [ $ISREMOTE == 0 ]; then #dont printout if remote
 		out "mongodb identified as configuration DB"
+	fi
+
+elif [ "x$ARTDAQ_DATABASE_TYPE" == "xtextdb" ]; then
+	# plain text store (Text_configInterface; used by ots maxlite): no index rebuild or
+	# artdaq-database table conversions apply
+	if [ $ISREMOTE == 0 ]; then #dont printout if remote
+		out "text configuration store identified as configuration DB"
 	fi
 
 else
