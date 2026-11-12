@@ -23,6 +23,7 @@ SlowControlsTableBase::SlowControlsTableBase(std::string  tableName,
 	//	This check and re-initialization seems to cover up the issue for now.
 	//	Why it is cleared to 0 after the constructor sets it to -1 is still unknown.
 	//		Note: it seems to only happen on the first alphabetially ARTDAQ Configure Table plugin.
+#ifndef OTS_MAXLITE  // TRACE workaround; maxlite has no TRACE
 	if(traceTID == 0)
 	{
 		std::cout << "SlowControlsTableBase Before traceTID=" << traceTID << __E__;
@@ -31,6 +32,7 @@ SlowControlsTableBase::SlowControlsTableBase(std::string  tableName,
 		std::cout << "SlowControlsTableBase After traceTID=" << traceTID << __E__;
 		__COUT__ << "SlowControlsTableBase TRACE reinit and Constructed." << __E__;
 	}
+#endif
 }  // end constuctor()
 
 //==============================================================================

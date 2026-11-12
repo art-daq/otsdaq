@@ -7,12 +7,15 @@
 #include <list>
 #include <string>
 #include <unordered_map>
-#include "TRACE/trace.h"
 #include "otsdaq/Macros/StringMacros.h"
+
+#ifndef OTS_MAXLITE  // ots maxlite has no TRACE: TRACEController maps the masks to OtsLog levels
+#include "TRACE/trace.h"
 
 #if TRACE_REVNUM < 1394
 #define traceLvls_p         traceNamLvls_p
 #define TRACE_TID2NAME(idx) traceNamLvls_p[idx].name
+#endif
 #endif
 
 namespace ots
@@ -55,6 +58,11 @@ class ITRACEController
 	std::string getTraceBufferDump(std::string const& filterFor = "",
 	                               std::string const& filterOut = "")
 	{
+#ifdef OTS_MAXLITE
+		(void)filterFor;
+		(void)filterOut;
+		return "The TRACE memory buffer is not available in ots maxlite (no TRACE).";
+#else
 		std::string command = "";  ///<"trace_cntl show";
 
 		std::vector<std::string> grepArr;
@@ -112,6 +120,7 @@ class ITRACEController
 		command += " | tdelta -d 1 ";
 		TLOG(TLVL_DEBUG) << "getTraceBufferDump command: " << command;
 		return StringMacros::exec(command.c_str());
+#endif
 	}  // end getTraceBufferDump()
 
 	//=====================================
@@ -123,6 +132,7 @@ class ITRACEController
 	}  // end getHostnameString()
 
   protected:
+#ifndef OTS_MAXLITE
 	//=====================================
 	void addTraceLevelsForThisHost(void)
 	{
@@ -173,6 +183,7 @@ class ITRACEController
 				TRACE_CNTL("lvlmskTg", lvl.T);
 		}
 	}  // end setTraceLevelsForThisHost()
+#endif
 
 	HostTraceLevelMap traceLevelsMap_;
 };

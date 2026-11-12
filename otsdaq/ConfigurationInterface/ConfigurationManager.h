@@ -12,6 +12,11 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.h"
 #include "otsdaq/TableCore/TableVersion.h"
 
+namespace fhicl
+{
+class ParameterSet;  // used only by initializeFromFhicl (not available in ots maxlite)
+}
+
 namespace ots
 {
 class ProgressBar;

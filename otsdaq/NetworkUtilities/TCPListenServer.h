@@ -4,7 +4,9 @@
 #include "otsdaq/NetworkUtilities/TCPReceiverSocket.h"
 #include "otsdaq/NetworkUtilities/TCPServerBase.h"
 
+#ifndef OTS_MAXLITE
 #include "TRACE/trace.h"
+#endif
 
 #include <chrono>
 

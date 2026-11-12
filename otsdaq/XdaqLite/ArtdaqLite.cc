@@ -3,8 +3,10 @@
 #include "artdaq-core/Utilities/configureMessageFacility.hh"
 #include "artdaq/DAQdata/Globals.hh"
 
+#ifndef OTS_MAXLITE
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#endif
 
 #include <unistd.h>
 #include <exception>
@@ -37,6 +39,23 @@ void artdaq::ExceptionHandler(ExceptionHandlerRethrow decision,
 		throw;
 }
 
+#ifdef OTS_MAXLITE
+// ots maxlite: no messagefacility. INIT_MF does not call these; they exist so the
+// declarations in configureMessageFacility.hh have definitions.
+std::string artdaq::generateMessageFacilityConfiguration(char const* /*progname*/,
+                                                         bool /*useConsole*/,
+                                                         bool /*printDebug*/,
+                                                         char const* /*fileExtraName*/)
+{
+	return "";
+}
+void artdaq::configureTRACE(fhicl::ParameterSet&) {}
+void artdaq::configureMessageFacility(char const* /*progname*/,
+                                      bool /*useConsole*/,
+                                      bool /*printDebug*/)
+{
+}
+#else
 // Follows artdaq-core: the destinations come from the fcl file named by ARTDAQ_LOG_FHICL
 // (otsdaq's MessageFacility*.fcl, which use the "OTS" and "UDP" destination types; lite
 // builds its own versions of those two plugins alongside this library). With no fcl, a
@@ -78,6 +97,7 @@ void artdaq::configureMessageFacility(char const* progname,
 	    generateMessageFacilityConfiguration(progname, useConsole, printDebug);
 	mf::StartMessageFacility(fhicl::ParameterSet::make(config), progname);
 }
+#endif  // OTS_MAXLITE
 
 std::string artdaq::setMsgFacAppName(const std::string& appType, unsigned short port)
 {
@@ -92,6 +112,8 @@ std::string artdaq::setMsgFacAppName(const std::string& appType, unsigned short 
 		appName += "-" + host;
 	}
 	appName += "-" + std::to_string(port);
+#ifndef OTS_MAXLITE
 	mf::SetApplicationName(appName);
+#endif
 	return appName;
 }

@@ -1,5 +1,5 @@
 #include "otsdaq/SlowControlsCore/MakeSlowControls.h"
-#include <cetlib/BasicPluginFactory.h>
+#include "otsdaq/Macros/PluginFactory.h"  // cet::BasicPluginFactory, or dlopen in maxlite
 
 #include "otsdaq/SlowControlsCore/SlowControlsVInterface.h"
 
@@ -11,7 +11,7 @@ ots::SlowControlsVInterface* ots::makeSlowControls(
     const std::string&
         pathToControlsConfiguration)  // Path to SlowControlsDashboard Table
 {
-	static cet::BasicPluginFactory basicPluginInterfaceFactory("slowcontrols", "make");
+	static ots::PluginFactory basicPluginInterfaceFactory("slowcontrols", "make");
 
 	return basicPluginInterfaceFactory.makePlugin<ots::SlowControlsVInterface*,
 	                                              const std::string&,

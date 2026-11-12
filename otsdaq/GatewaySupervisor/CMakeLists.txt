@@ -18,8 +18,7 @@ cet_make_library(LIBRARY_NAME iteratorPluginMaker
   PUBLIC
   otsdaq_plugin_types::IteratorPluginInterface
   PRIVATE
-  fhiclcpp::fhiclcpp
-  cetlib::cetlib
+  ${OTS_PLUGIN_FACTORY_LIBRARIES} # cetlib+fhiclcpp, or dl in maxlite
 )
 
 # keep GatewaySupervisor in the package default export set it has always used

@@ -23,7 +23,6 @@ UDPDataStreamerBase.cc
         LIBRARIES PUBLIC
         PRIVATE
         otsdaq::MessageFacility
-        Boost::regex
         Threads::Threads
 )
 

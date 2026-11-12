@@ -29,7 +29,7 @@
 #include <xercesc/framework/LocalFileFormatTarget.hpp>
 #include <xercesc/util/OutOfMemoryException.hpp>
 
-#include <boost/regex.hpp>
+#include <regex>
 
 #include <iostream>
 #include <list>
@@ -690,9 +690,9 @@ void XmlDocument::makeDirectoryBinaryTree(const std::string&   fSystemPath,
 		else
 		{
 			newFullPath = fSystemPath_ + std::string("/") + std::string(entry->d_name);
-			boost::smatch what;
-			boost::regex  re{".*\\.root$"};
-			if(boost::regex_search(newFullPath, what, re))
+			std::smatch what;
+			std::regex  re{".*\\.root$"};
+			if(std::regex_search(newFullPath, what, re))
 			{
 				fFileName_    = std::string(entry->d_name);
 				fFoldersPath_ = "";

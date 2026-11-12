@@ -18,8 +18,7 @@ cet_make_library(LIBRARY_NAME dataProcessorMaker
   PUBLIC
   otsdaq_plugin_types::IDataProcessor
   PRIVATE
-  fhiclcpp::fhiclcpp
-  cetlib::cetlib
+  ${OTS_PLUGIN_FACTORY_LIBRARIES} # cetlib+fhiclcpp, or dl in maxlite
 )
 
 

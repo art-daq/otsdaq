@@ -1,10 +1,13 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
+#ifndef OTS_MAXLITE  // maxlite has no fhiclcpp: initializeFromFhicl is not available
 #include "artdaq/Application/LoadParameterSet.hh"
+#endif
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"  //All configurable objects are included here
 #include "otsdaq/ProgressBar/ProgressBar.h"
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
 #include <dirent.h>  // DIR and dirent
+#include <sys/stat.h>  // mkdir
 #include <fstream>   // std::ofstream
 #include <sstream>   // std::istringstream
 
@@ -4394,6 +4397,12 @@ const std::set<std::string>& ConfigurationManager::getConfigurationMemberNames(v
 void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 {
 	__GEN_COUT__ << "Initializing from fhicl: " << fhiclPath << __E__;
+#ifdef OTS_MAXLITE
+	__GEN_SS__ << "Initializing the configuration from a fhicl file (Macro Maker mode, "
+	              "CONFIGURATION_INIT_FCL) is not available in ots maxlite (no fhiclcpp)."
+	           << __E__;
+	__GEN_SS_THROW__;
+#else
 
 	// https://cdcvs.fnal.gov/redmine/projects/fhicl-cpp/wiki
 
@@ -4612,9 +4621,10 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 			__GEN_COUTV__(StringMacros::vectorToString(fes));
 		}
 	}
-
+#endif  // OTS_MAXLITE
 }  // end initializeFromFhicl()
 
+#ifndef OTS_MAXLITE
 //==============================================================================
 /// recursiveInitFromFhiclPSet
 ///		Add records and all children parameters starting at table
@@ -4876,6 +4886,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 	}
 
 }  // end recursiveInitFromFhiclPSet()
+#endif  // OTS_MAXLITE
 
 //==============================================================================
 /// Returns true if the app is the first ENABLED app in the context. If there are no enabled apps, then return true if app[0].

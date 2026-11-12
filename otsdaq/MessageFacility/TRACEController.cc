@@ -1,5 +1,69 @@
 #include "otsdaq/MessageFacility/TRACEController.h"
 
+#ifdef OTS_MAXLITE
+//==============================================================================
+// ots maxlite: no TRACE. The level masks shown and set by the Console page map to the
+// single OtsLog print threshold (otsdaq/Macros/OtsLog.h): bit n set <=> level n printed.
+// The memory buffer and trigger features of TRACE do not exist and are reported as off.
+namespace
+{
+const char* MAXLITE_LOG_NAME = "ots";  // the one name reported to the Console page
+
+uint64_t thresholdToMask(int threshold)
+{
+	if(threshold < 0)
+		return 0;
+	if(threshold >= 63)
+		return ~0ULL;
+	return (1ULL << (threshold + 1)) - 1;
+}
+int maskToThreshold(uint64_t mask)
+{
+	int threshold = -1;  // highest set bit
+	for(int bit = 0; bit < 64; ++bit)
+		if(mask & (1ULL << bit))
+			threshold = bit;
+	return threshold;
+}
+}  // namespace
+
+//==============================================================================
+const ots::ITRACEController::HostTraceLevelMap& ots::TRACEController::getTraceLevels()
+{
+	traceLevelsMap_.clear();
+	uint64_t mask = thresholdToMask(ots::log::threshold());
+	traceLevelsMap_[getHostnameString()][MAXLITE_LOG_NAME] = TraceMasks{0, mask, 0};
+	return traceLevelsMap_;
+}  // end getTraceLevels()
+
+//==============================================================================
+void ots::TRACEController::setTraceLevelMask(std::string const& /*label*/,
+                                             TraceMasks const&  lvl,
+                                             std::string const& hostname,
+                                             std::string const& mode /*= "ALL"*/)
+{
+	if(hostname != "localhost" && hostname != getHostnameString())
+	{
+		TLOG(TLVL_WARNING) << "TRACEController asked to set levels for host " << hostname
+		                   << ", but this is " << getHostnameString() << "!";
+		return;
+	}
+	if(mode != "ALL" && mode != "SLOW")
+		return;  // only the printed (slow path) levels exist in maxlite
+	ots::log::setThreshold(maskToThreshold(lvl.S));
+	TLOG(TLVL_INFO) << "Print level threshold set to " << ots::log::threshold();
+}  // end setTraceLevelMask()
+
+bool ots::TRACEController::getIsTriggered() { return false; }
+void ots::TRACEController::setTriggerEnable(size_t /*entriesAfterTrigger*/) {}
+void ots::TRACEController::resetTraceBuffer() {}
+void ots::TRACEController::enableTrace(bool enable /* = true */)
+{
+	ots::log::setThreshold(enable ? TLVL_DEBUG : TLVL_WARNING);
+}
+
+#else  // TRACE
+
 //==============================================================================
 const ots::ITRACEController::HostTraceLevelMap& ots::TRACEController::getTraceLevels()
 {
@@ -51,3 +115,5 @@ void ots::TRACEController::enableTrace(bool enable /* = true */)
 	TRACE_CNTL("modeM", enable ? 1 : 0);
 	TRACE_CNTL("modeS", enable ? 1 : 0);
 }  // end enableTrace()
+
+#endif  // OTS_MAXLITE

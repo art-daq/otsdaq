@@ -3,7 +3,9 @@
 
 #include <memory>
 #include <string>
+#ifndef OTS_MAXLITE  // maxlite has no cetlib; the plain extern "C" fallback below is used
 #include "cetlib/compiler_macros.h"
+#endif
 #include "otsdaq/GatewaySupervisor/IteratorPluginVInterface.h"
 
 #ifndef EXTERN_C_FUNC_DECLARE_START

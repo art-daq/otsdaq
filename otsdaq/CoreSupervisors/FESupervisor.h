@@ -3,7 +3,9 @@
 
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 
+#ifndef OTS_MAXLITE  // maxlite has no ZeroMQ: data publishing is not available
 #include "zmq.hpp"
+#endif
 
 #include <memory>
 #include <mutex>
@@ -95,8 +97,10 @@ class FESupervisor : public CoreSupervisorBase
 	uint64_t                                     asyncMacroTaskIDCounter_ = 0;
 
 	// ZeroMQ Publisher
+#ifndef OTS_MAXLITE
 	zmq::context_t dp_context_;                ///< ZeroMQ context (1 I/O thread by default)
 	zmq::socket_t  dp_socket_;                 ///< PUB socket
+#endif
 	std::string    dp_endpoint_;               ///< Cached endpoint string (for debugging)
 	std::string    dp_topic_;                  ///< Cached topic string (sent with every payload)
 	bool           dp_isInitialized_ = false;  ///< Guard: have we called init() ?

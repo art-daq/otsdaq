@@ -1,6 +1,7 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 
 #include <dirent.h>
+#include <sys/stat.h>  // mkdir
 #include <chrono>
 
 using namespace ots;
@@ -270,6 +271,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 						                   0,
 						                   true);  // dont fill
 					}
+#ifndef OTS_MAXLITE  // cet::exception exists only with cetlib
 					catch(cet::exception const&)
 					{
 						if(table)
@@ -280,6 +282,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 						             << entry->d_name << "\n";
 						continue;
 					}
+#endif
 					catch(std::runtime_error& e)
 					{
 						if(table)
@@ -780,6 +783,7 @@ try
 		                           0,
 		                           true);  // dont fill
 	}
+#ifndef OTS_MAXLITE  // cet::exception exists only with cetlib
 	catch(cet::exception const&)
 	{
 		if(tableInfo->tablePtr_)
@@ -790,6 +794,7 @@ try
 		*(threadDone) = true;
 		return;
 	}
+#endif
 	catch(std::runtime_error& e)
 	{
 		if(tableInfo->tablePtr_)

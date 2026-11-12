@@ -2,6 +2,7 @@
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
+#include <unistd.h>  // usleep
 #include <iomanip> /* for setfill */
 #include <iostream>
 #include <sstream>

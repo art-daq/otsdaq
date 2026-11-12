@@ -1,4 +1,4 @@
-#include <cetlib/BasicPluginFactory.h>
+#include "otsdaq/Macros/PluginFactory.h"  // cet::BasicPluginFactory, or dlopen in maxlite
 
 #include "otsdaq/TableCore/MakeTable.h"
 #include "otsdaq/TableCore/TableBase.h"
@@ -7,7 +7,7 @@ namespace ots
 {
 TableBase* makeTable(std::string const& tablePluginName)
 {
-	static cet::BasicPluginFactory basicPluginInterfaceFactory("table", "make");
+	static ots::PluginFactory basicPluginInterfaceFactory("table", "make");
 
 	// TLOG_DEBUG(30) << "Making TablePlugin " << tablePluginName;
 	auto ptr = basicPluginInterfaceFactory.makePlugin<TableBase*>(tablePluginName);

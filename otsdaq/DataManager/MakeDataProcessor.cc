@@ -2,7 +2,7 @@
 #include "otsdaq/DataManager/DataProcessor.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
-#include <cetlib/BasicPluginFactory.h>
+#include "otsdaq/Macros/PluginFactory.h"  // cet::BasicPluginFactory, or dlopen in maxlite
 
 ots::DataProcessor* ots::makeDataProcessor(
     std::string const&            processorPluginName,
@@ -12,7 +12,7 @@ ots::DataProcessor* ots::makeDataProcessor(
     ots::ConfigurationTree const& configurationTree,
     std::string const&            pathToInterfaceConfiguration)
 {
-	static cet::BasicPluginFactory basicPluginInterfaceFactory("processor", "make");
+	static ots::PluginFactory basicPluginInterfaceFactory("processor", "make");
 
 	return basicPluginInterfaceFactory.makePlugin<ots::DataProcessor*,
 	                                              std::string const&,

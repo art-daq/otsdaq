@@ -9,10 +9,16 @@
 #include <iostream>  //for cout
 #include <sstream>   //for stringstream, std::stringbuf
 
+#ifdef OTS_MAXLITE
+// ots maxlite: no TRACE; TLOG/TTEST/TLVL_* write to std::cout (see OtsLog.h)
+#include <stdexcept>
+#include "otsdaq/Macros/OtsLog.h"
+#else
 #define TRACEMF_USE_VERBATIM 1 //for trace longer path filenames
 
 // #define TSTREAMER_SL_FRC(lvl)	(lvl<TLVL_DEBUG) //FIXME uncomment once trace supports #ifdef TSTREAMER_SL_FRC (as of 17-Feb-2026 not defined)
 #include "TRACE/tracemf.h"
+#endif
 
 
 /// take filename only after srcs/ (this gives by repo name)

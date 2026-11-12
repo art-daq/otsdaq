@@ -4,7 +4,10 @@
 #	message(STATUS "${_variableName}=${${_variableName}}")
 #endforeach()
 
-find_package(cppzmq REQUIRED EXPORT) # for publish/subscribe of data from FE to Supervisor
+if(NOT DEFINED ENV{OTS_MAXLITE}) # maxlite has no ZeroMQ
+	find_package(cppzmq REQUIRED EXPORT) # for publish/subscribe of data from FE to Supervisor
+	set(OTS_ZMQ_LIBRARIES cppzmq)
+endif()
 
 if(DEFINED ENV{OTS_LITE})
 	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES otsdaq::XdaqLite)
@@ -37,7 +40,7 @@ cet_make_library(LIBRARY_NAME CoreSupervisors
 		otsdaq::CgiDataUtilities
         XDAQ::config
         XDAQ::xgi
-		cppzmq # for publish/subscribe of data from FE to Supervisor
+		${OTS_ZMQ_LIBRARIES} # cppzmq for publish/subscribe of data from FE to Supervisor
 		)
 
 install_headers()

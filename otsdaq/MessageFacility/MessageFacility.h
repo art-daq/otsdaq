@@ -3,6 +3,15 @@
 
 #include "otsdaq/Macros/CoutMacros.h"
 
+#ifdef OTS_MAXLITE
+// ots maxlite: no messagefacility; __COUT__ messages go to std::cout through OtsLog,
+// so there is nothing to configure.
+namespace ots
+{
+inline void INIT_MF(const char* /*name*/) {}
+}  // namespace ots
+#else
+
 #include <messagefacility/MessageLogger/MessageLogger.h>
 #include "artdaq-core/Utilities/configureMessageFacility.hh"
 
@@ -93,5 +102,7 @@ inline void INIT_MF(const char* name)
 }  // end INIT_MF()
 
 }  // namespace ots
+
+#endif  // OTS_MAXLITE
 
 #endif

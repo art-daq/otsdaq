@@ -5,7 +5,6 @@ cet_make_library(LIBRARY_NAME XmlUtilities
       XercesC::XercesC
 	 LIBRARIES PRIVATE
 	 otsdaq::MessageFacility
-	 Boost::regex
         )
 
 #get_cmake_property(_variableNames VARIABLES)

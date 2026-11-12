@@ -43,8 +43,10 @@ XDAQ_INSTANTIATOR_IMPL(FESupervisor)
 //==============================================================================
 FESupervisor::FESupervisor(xdaq::ApplicationStub* stub)
     : CoreSupervisorBase(stub)
+#ifndef OTS_MAXLITE
     , dp_context_{1}  // 1 I/O thread – sufficient for most tests
     , dp_socket_{dp_context_, zmq::socket_type::pub}
+#endif
 {
 	__SUP_COUT__ << "Constructing..." << __E__;
 
@@ -1720,6 +1722,7 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 		        .getValueWithDefault<std::string>("");
 		__SUP_COUTV__(metricNamePreamble);
 
+#ifndef OTS_MAXLITE  // maxlite has no fhiclcpp; the metric manager is never initialized
 		// std::string         metric_string = "epics: {metricPluginType:epics level:3 channel_name_prefix:Mu2e}";
 		fhicl::ParameterSet metric_pset = fhicl::ParameterSet::make(metric_string);
 
@@ -1738,6 +1741,9 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 				                "string is not setup."
 				             << __E__;
 		}
+#else
+		(void)metricStringSetup;
+#endif
 		__SUP_COUT__ << "transitionConfiguring metric manager(" << metricMan
 		             << ") initialized = " << metricMan->Initialized() << __E__;
 	}
@@ -1897,6 +1903,12 @@ void FESupervisor::initDataPublishing(const std::string& endpoint,
 	// Store for later use.
 	dp_endpoint_ = endpoint;
 	dp_topic_    = topic;
+#ifdef OTS_MAXLITE
+	__SUP_SS__ << "initDataPublishing() - data publishing over ZeroMQ is not available in "
+	              "ots maxlite (endpoint '"
+	           << dp_endpoint_ << "')." << __E__;
+	__SUP_SS_THROW__;
+#else
 
 	// Bind the PUB socket.
 	try
@@ -1912,11 +1924,16 @@ void FESupervisor::initDataPublishing(const std::string& endpoint,
 	}
 
 	dp_isInitialized_ = true;
+#endif
 }  //end initDataPublishing()
 
 //==============================================================================
 void FESupervisor::closeDataPublishing(bool alsoCloseContext /* = true */)
 {
+#ifdef OTS_MAXLITE
+	(void)alsoCloseContext;
+	dp_isInitialized_ = false;  // never set in maxlite
+#else
 	if(dp_isInitialized_)
 	{
 		try
@@ -1939,6 +1956,7 @@ void FESupervisor::closeDataPublishing(bool alsoCloseContext /* = true */)
 		}
 		dp_isInitialized_ = false;
 	}
+#endif
 }  //end closeDataPublishing()
 
 //==============================================================================
@@ -1957,6 +1975,10 @@ void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 		__SUP_SS_THROW__;
 	}
 
+#ifdef OTS_MAXLITE
+	(void)dataPtr;
+	(void)dataSize;
+#else
 	// ---- Topic frame (must be sent with sndmore) ----
 	// Using zmq::buffer prevents an extra copy – it just points at the data.
 	auto rc_topic = dp_socket_.send(zmq::buffer(dp_topic_), zmq::send_flags::sndmore);
@@ -1981,4 +2003,5 @@ void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 		__SUP_SS__ << "publishData() - failed to send zmq payload" << __E__;
 		__SUP_SS_THROW__;
 	}
+#endif
 }  //end publishData()
