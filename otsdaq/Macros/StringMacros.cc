@@ -11,7 +11,9 @@
 #include <cstdint>  // for uintptr_t
 #include <cstring>  // for strerror
 #include <fstream>  // for loadPersistentSystemVariables
+#include <iomanip>  // for std::setw, std::setfill
 #include <mutex>    // for loadPersistentSystemVariables
+#include <functional>
 
 using namespace ots;
 
@@ -478,10 +480,10 @@ std::string StringMacros::escapeString(std::string inString,
 					i += 7;                 // skip to next char to check
 				}
 			}
-			else if(inString[i] >= char(161) &&
-			        inString[i] <= char(255))  // printable special characters
+			else if((unsigned char)inString[i] >=
+			        161)  // printable special characters (unsigned: char is unsigned on ARM)
 			{
-				sprintf(htmlTmp, "&#%3.3d", inString[i]);
+				sprintf(htmlTmp, "&#%3.3d", (unsigned char)inString[i]);
 				inString.insert(i, std::string(htmlTmp));  // insert html number sequence
 				inString.replace(i + 5, 1, 1, ';');  // replace special character with ;
 				i += 5;                              // skip to next char to check

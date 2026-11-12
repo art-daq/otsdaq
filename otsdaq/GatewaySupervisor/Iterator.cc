@@ -6,6 +6,7 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 #include "otsdaq/WebUsersUtilities/WebUsers.h"
 
+#include <cinttypes>  // PRIu64/SCNu64: uint64_t is not long on 32-bit ARM
 #include <ctime>    //for strftime in plan log filename
 #include <fstream>  //for plan log
 #include <iostream>
@@ -2966,7 +2967,7 @@ void Iterator::playGeneratedIterationPlan(HttpXmlDocument&   xmldoc,
 	parameters[5] = StringMacros::decodeURIComponent(parameters[5]);
 
 	uint64_t durationSeconds;
-	sscanf(parameters[2].c_str(), "%lu", &durationSeconds);
+	sscanf(parameters[2].c_str(), "%" SCNu64, &durationSeconds);
 	unsigned int numberOfRuns;
 	sscanf(parameters[3].c_str(), "%u", &numberOfRuns);
 	unsigned int keepConfiguration;

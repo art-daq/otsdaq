@@ -9,6 +9,7 @@
 #include <regex>       //for std::regex
 #include <sstream>     //for std::stringstream
 #include <thread>      //for std::thread
+#include <functional>
 
 using namespace ots;
 

@@ -28,6 +28,7 @@
 #include <toolbox/task/WorkLoopFactory.h>
 #include <xdaq/NamespaceURI.h>
 #include <xoap/Method.h>
+#include <cinttypes>  // PRIu64/SCNu64: uint64_t is not long on 32-bit ARM
 #include <sstream>
 
 #include <sys/stat.h>  // for mkdir
@@ -36,6 +37,9 @@
 #include <cstdio>      // for snprintf
 #include <fstream>
 #include <thread>  // std::this_thread::sleep_for
+#include <iomanip>  // std::setw etc.
+#include <functional>
+#include <algorithm>
 
 using namespace ots;
 
@@ -11738,7 +11742,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 				    theWebUsers_.getActiveSessionCountForUser(uid) -
 				    1;  // subtract 1 to remove just started session from count
 				char asStr[20];
-				sprintf(asStr, "%lu", asCnt);
+				sprintf(asStr, "%" PRIu64, asCnt);
 				xmldoc.addTextElementToData("user_active_session_count", asStr);
 			}
 
@@ -11811,7 +11815,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 				    theWebUsers_.getActiveSessionCountForUser(uid) -
 				    1;  // subtract 1 to remove just started session from count
 				char asStr[20];
-				sprintf(asStr, "%lu", asCnt);
+				sprintf(asStr, "%" PRIu64, asCnt);
 				xmldoc.addTextElementToData("user_active_session_count", asStr);
 			}
 

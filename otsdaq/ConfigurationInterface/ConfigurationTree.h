@@ -3,6 +3,8 @@
 
 #include "otsdaq/TableCore/TableView.h"
 
+#include <iomanip>  // std::setw, std::setprecision (used in the .icc)
+
 namespace ots
 {
 class ConfigurationManager;

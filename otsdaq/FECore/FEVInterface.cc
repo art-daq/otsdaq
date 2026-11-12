@@ -9,9 +9,11 @@
 #endif
 
 #define TRACE_NAME "FEVInterface"
+#include <cinttypes>  // PRIu64: uint64_t is not long on 32-bit ARM
 #include <iostream>
 #include <sstream>
 #include <thread>  //for std::thread
+#include <functional>
 
 using namespace ots;
 
@@ -1120,7 +1122,7 @@ void FEVInterface::runSequenceOfCommands(const std::string& treeLinkName)
 					writeHistory[writeAddress] |= writeValue;  // add incoming bits
 
 					sprintf(msg,
-					        "\t Writing %s: \t %ld(0x%lX) \t %ld(0x%lX)",
+					        "\t Writing %s: \t %" PRIu64 "(0x%" PRIX64 ") \t %" PRIu64 "(0x%" PRIX64 ")",
 					        child.first.c_str(),
 					        writeAddress,
 					        writeAddress,

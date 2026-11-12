@@ -109,9 +109,11 @@ std::string artdaq::setMsgFacAppName(const std::string& appType, unsigned short 
 		size_t      dot = host.find('.');
 		if(dot != std::string::npos && dot > 2)
 			host = host.substr(0, dot);
-		appName += "-" + host;
+		appName += '-';  // appended piece by piece: gcc 12 -O3 reports a false
+		appName += host;  // -Wrestrict on "-" + std::string (seen cross-compiling)
 	}
-	appName += "-" + std::to_string(port);
+	appName += '-';
+	appName += std::to_string(port);
 #ifndef OTS_MAXLITE
 	mf::SetApplicationName(appName);
 #endif

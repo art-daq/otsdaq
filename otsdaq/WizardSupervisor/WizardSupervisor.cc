@@ -24,6 +24,7 @@
 #include <iostream>
 #include <string>
 #include <thread>  // std::this_thread::sleep_for
+#include <algorithm>
 namespace filesystem = std::filesystem;
 using namespace ots;
 

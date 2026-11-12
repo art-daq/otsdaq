@@ -2430,7 +2430,7 @@ int TableView::fillFromJSON(const std::string& json)
 	unsigned int i             = 0;
 	unsigned int row           = -1;
 	unsigned int colSpeedup    = 0;
-	unsigned int startString, startNumber = 0, endNumber = -1;
+	unsigned int startString = 0, startNumber = 0, endNumber = -1;
 	unsigned int bracketCount   = 0;
 	unsigned int sqBracketCount = 0;
 	bool         inQuotes       = 0;

@@ -1,5 +1,6 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.h"
 
+#include <algorithm>  // std::count
 #include <typeinfo>
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"

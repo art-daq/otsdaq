@@ -14,6 +14,7 @@
 #include <iostream>
 #include <sstream>
 #include <thread>  //for std::thread
+#include <functional>
 
 using namespace ots;
 
