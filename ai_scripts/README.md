@@ -18,6 +18,7 @@ read its header) for usage.
 | [add_remote_subsystem.sh](add_remote_subsystem.sh) | ConfigGUI UDP of the top level, Kerberos | make a satellite ots a Remote Gateway subsystem of the top level: `SubsystemUserDataPathsTable` row + `ots:` Desktop icon in one Context group; `-n` dry run |
 | [setup_ots_subsystems.sh](setup_ots_subsystems.sh) | write access to `setup_ots.sh` | make `source setup_ots.sh <subsystem>` select `Data_<subsystem>` and its ports (shared database); rerun after `mz_uc` |
 | [convert_config_store.sh](convert_config_store.sh) | `setup_ots.sh` of an install with both store plugins (lite/full) | `all`: copy a whole configuration store between `filesystemdb://` and `textdb://` keeping numbers; `active`: export the active groups and aliases of one store + USER_DATA and import them into another (merge, or `--fresh`); `-n` dry run |
+| [maxlite_cross_build.sh](maxlite_cross_build.sh) | podman, network | cross-compile ots maxlite for aarch64 or arm32 in a Debian 12 container (`ots-quick-maxlite-start.sh --arch`), then check the libraries; works with rootless podman without `/etc/subuid` and with SELinux enforcing |
 | [check_maxlite_libraries.sh](check_maxlite_libraries.sh) | readelf | list the shared libraries an ots maxlite install needs and flag ones maxlite must not need (TRACE, messagefacility, cetlib, fhiclcpp, Boost, artdaq, ZeroMQ, CURL, ICU...); works on cross-compiled installs |
 | [revert_active_table_group.sh](revert_active_table_group.sh) | file access to `Data/ServiceData` | revert an active group key when `ots` cannot start |
 

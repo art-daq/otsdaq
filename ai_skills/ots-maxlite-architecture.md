@@ -12,7 +12,8 @@ local clones (not on GitHub), so installs use `--repo-base <local dir with the r
 Status 2026-11-12, all on x86_64 (first_demo tutorial): install and compile, Wiz mode, normal
 mode, ConfigGUI/MacroMaker/Gateway UDP remote controls, configuration edits saved to the text
 store, Configure/Start, emulator data to the Visualizer (`getWaveformData` live samples), web
-Console receiving. Not yet: an ARM build, a run on an SoC.
+Console receiving. ARM: cross-compiled for aarch64 and 32-bit ARM (armhf), see "Cross compiling
+for ARM". Not yet: running on an ARM board.
 
 ## Install
 
@@ -72,6 +73,47 @@ compile of all repos in **117-140 s** (xerces-c 16 s when the OS lacks it, cetmo
 otsdaq 67-81 s, otsdaq-components 10 s, otsdaq-utilities 18-22 s, otsdaq-demo 3 s). ots lite
 from the same branch on the same machine: 276 s. Installed size: 88 MB (`local/install`,
 unstripped; libraries 23 MB).
+
+## Cross compiling for ARM (aarch64, arm32)
+
+`ots-quick-maxlite-start.sh --arch aarch64|arm32` compiles the otsdaq repos for the target with
+the Debian/Ubuntu multiarch cross compilers (`aarch64-linux-gnu-g++`, `arm-linux-gnueabihf-g++`)
+and the target's `libxerces-c-dev` and `libssl-dev` (`apt install libxerces-c-dev:arm64
+libssl-dev:arm64`, `:armhf` for arm32). It writes `tmp/toolchain-<triplet>.cmake` and uses it for
+the prerequisite probe, a Xerces-C built from source, the otsdaq repos and `mb`/`mz` in
+`setup_ots.sh`; cetmodules stays a build-host package. `--toolchain <file>` uses another CMake
+toolchain file instead (e.g. from a PetaLinux/Yocto SDK).
+
+On an x86 host without those packages (e.g. AlmaLinux), do it in a Debian 12 container:
+
+```bash
+ai_scripts/maxlite_cross_build.sh aarch64 ~/ots-maxlite-arm64 --repo-base <dir with the repos>
+ai_scripts/maxlite_cross_build.sh arm32   ~/ots-maxlite-armhf --repo-base <dir with the repos>
+```
+
+It builds the image from `otsdaq-demo/tools/ots-maxlite-cross.Containerfile` once (rootless
+podman; works without `/etc/subuid` entries and with SELinux enforcing, see the script header),
+runs the installer with `--arch`, runs `check_maxlite_libraries.sh`, and prints the command to run
+`mb`/`mz` in the container later.
+
+Verified 2026-11-12 (AlmaLinux 9 host, Debian 12 gcc 12.2 cross compilers): clean installs
+including the build in ~165 s each (otsdaq ~110 s, utilities ~30 s); programs are
+`ELF 64-bit ARM aarch64` / `ELF 32-bit ARM EABI5` and need only libc, libstdc++, libgcc_s, libm,
+`libxerces-c-3.2.so` and `libcrypto.so.3`; installs 78 MB (aarch64) and 71 MB (armhf),
+unstripped. Not yet run on ARM (no board or emulator was used).
+
+What the ARM builds found (fixed in all builds, commits a8867487 and following):
+- `printf`/`scanf` of `uint64_t` with `%lu`/`%ld`/`%lX` (`long` is 32-bit on armhf: wrong values,
+  and `scanf` wrote 8 bytes into 4): now `PRIu64`/`SCNu64`/`PRIX64` from `<cinttypes>`; `size_t`
+  with `%zu`. WebUsers (user and session files), FEVInterface, GatewaySupervisor, Iterator, Chat.
+- `char` is unsigned on ARM: a 161..255 range test in `StringMacros` now compares `unsigned char`
+  (on x86 its `%d` print gave negative numbers).
+- The emulator's counter mode copied 8 bytes from a 4-byte `time_t` on 32-bit.
+- gcc 12 (the Debian cross compilers): standard headers that gcc 13 pulled in indirectly
+  (`<iomanip>`, `<algorithm>`, `<optional>`, `<functional>`) are now included where used; a
+  maybe-uninitialized variable in `TableView`; gcc 12's false `-Wrestrict` on
+  `"literal" + std::string` (GCC bug 105651) is kept a warning by the toolchain file
+  (`-Wno-error=restrict`).
 
 ## What the programs need at run time
 
@@ -209,8 +251,8 @@ Do not use `reset_ots_tutorial.sh` in maxlite: its `get_tutorial_data.sh` accept
 ## Open items
 
 - Tutorial database for maxlite (convert once and ship a text copy, or convert during install).
-- Cross compiling for aarch64 and 32-bit ARM (toolchain files, installer `--arch`), then a run
-  on an SoC.
+- Run the ARM builds on a board (copy `local/install`, `Data`, the text store and the
+  `otsdaq-utilities/WebGUI` web files; a packaging script is planned), measure footprint/RAM.
 - ots lite from this branch: builds (2026-11-12); not yet run in Wiz/normal mode. Full (Spack)
   build not compiled.
 - Console burst loss at Configure (kernel `rmem_max`, see "Web Console").
