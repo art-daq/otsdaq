@@ -64,6 +64,37 @@ through TRACE added (`<cstdint>`, `<sys/stat.h>`, `<unistd.h>`).
 Lite check, 2026-11-12: a clean ots lite install from `feature/ots-maxlite` (lite installer,
 `--repo-base` dev-srcs) builds all repos without errors.
 
+## Web Console
+
+In lite and full builds messagefacility's UDP destination sends each message to
+`otsConsoleFwd`, which forwards it to the Console Supervisor (ports in
+`Data/MessageFacilityConfigurations/QuietForwarder.cfg`, e.g. 30000 -> 30001). In maxlite
+`OtsLog` sends the same line itself, to the `type: UDP` destination (host, port) of the fcl
+file named by `OTSDAQ_LOG_FHICL` (the ots script sets it, e.g. `MessageFacilityGen.fcl`):
+
+```
+UDPMFMESSAGE|12-Nov-2026 14:39:19|1|<host>|<host IP>|Debug|<subject>|<application>|<pid>|||<file>|<line>|<text>
+```
+
+Severity names are messagefacility's (`Error`, `Warning`, `Info`, `Debug`); the application
+is the first `INIT_MF` name of the process. Numbering and sending happen under one lock, so
+the Console's per-process sequence check sees lines in order.
+
+Verified 2026-11-12 (ots maxlite, first_demo, normal mode): the Console log shows "Console has
+first message" and keeps receiving (lite builds show "No messages received ... Exiting",
+because lite's `UDP` destination discards). Known: at the Configure burst the Console
+reported `Console missed 117 packet(s)` once per run; the kernel caps socket receive buffers
+at `net.core.rmem_max` (212992 here), so the forwarder drops a burst of several hundred
+lines. Raising `net.core.rmem_max` (root) removes it; the same limit applies to
+messagefacility's UDP destination.
+
+## Visualizer waveforms
+
+Verified 2026-11-12 with first_demo in maxlite: Configure/Start over Gateway UDP, emulator sine
+burst over MacroMaker UDP, `getWaveformData` returns `source=live` samples (see
+[tutorial-to-visualizer-waveforms.md](tutorial-to-visualizer-waveforms.md), "Doing Steps 1-5
+with the helper scripts").
+
 ## Configuration: text store
 
 `ARTDAQ_DATABASE_URI=textdb://<path>` selects the `Text` plugin
@@ -102,6 +133,4 @@ Do not use `reset_ots_tutorial.sh` in maxlite: its `get_tutorial_data.sh` accept
 - Tutorial database for maxlite (convert once and ship, or convert during install).
 - Running ots in maxlite (not yet tried): `tools/ots` still calls TRACE shell commands
   (`tonS`, `trace_cntl`, `setupTrace`) and starts `otsConsoleFwd`; these need maxlite guards.
-- Web Console messages: the Console Supervisor receives UDP lines; in maxlite nothing sends them
-  yet (plan: OtsLog sends each line in the Console's `UDPMFMESSAGE|...` format).
 - Cross compiling for aarch64 and 32-bit ARM (toolchain files, installer `--arch`).

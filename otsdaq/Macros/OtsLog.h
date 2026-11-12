@@ -47,6 +47,9 @@ int         threshold(void);
 void        setThreshold(int level);
 inline bool enabled(int level) { return level <= threshold(); }
 
+/// application name shown in the web Console (set by INIT_MF; default "ots")
+void setApplicationName(const std::string& name);
+
 /// writes one finished message (level name, subject, file:line, text) to standard output
 void emit(int                level,
           const std::string& subject,
