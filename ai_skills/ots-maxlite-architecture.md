@@ -83,7 +83,19 @@ an ots lite (or full) installation. Verified 2026-11-12 on the tutorial database
 versions and 20 group keys, round trip text -> artdaq-database -> text byte-identical.
 
 The maxlite installer still installs the tutorial database in `databases/filesystemdb/` and
-creates an **empty** `databases/textdb/test_db`; converting it is an open item.
+creates an **empty** `databases/textdb/test_db`; converting it is an open item. Until then,
+convert it once from any lite install of this branch (2026-11-12: 35 table versions, 7 group
+keys, verified):
+
+```
+cd <lite area> && source setup_ots.sh
+otsdaq_convert_config_db filesystemdb://<maxlite>/databases/filesystemdb/test_db \
+    textdb://<maxlite>/databases/textdb/test_db --verify
+```
+
+Do not use `reset_ots_tutorial.sh` in maxlite: its `get_tutorial_data.sh` accepts only
+`filesystemdb://`, and it kills every otsdaq of the user on the host
+(see `../ai_dev_skills/tutorial-improvement.md`).
 
 ## Open items
 

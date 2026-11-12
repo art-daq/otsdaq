@@ -46,6 +46,16 @@ it. `ai_dev_scripts/tutorial_walkthrough_lite.sh <new scratch dir> [--branch B]`
   `echo Y |`.
 - **Proof:** record the PIDs of every other `xdaq.exe`, `ots_lite_main` and emulator process before,
   and compare after.
+- **Do not run `reset_ots_tutorial.sh` while any other otsdaq runs on the host.** It begins with
+  `ots --killall` (`killall -9 xdaq.exe` for every process of the user, all install areas) and
+  `killall -9 ots_udp_hw_emulator`, so it stops every other otsdaq and emulator of that user.
+  The installers already install the first_demo data, so after a fresh install there is nothing
+  to reset: start it with `ots --wiz` (activates the groups), then `ots`, then
+  `ots_udp_hw_emulator 4000 &`. Found 2026-11-12.
+- `reset_ots_tutorial.sh` downloads `get_tutorial_data.sh` from GitHub, which accepts only
+  `ARTDAQ_DATABASE_URI=filesystemdb://...`; in ots maxlite (`textdb://`) it stops with
+  "Environment variable ARTDAQ_DATABASE_URI not setup correctly". See
+  `../ai_skills/ots-maxlite-architecture.md` for how the maxlite installer installs the data.
 - **Wiz mode only** for install-level tutorials: it starts one web application and no front-ends,
   emulators or UDP traffic. Tutorials that need normal mode and front-ends need a scratch
   configuration with its own ports for every context and the emulator; plan that per tutorial.
