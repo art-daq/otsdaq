@@ -959,14 +959,26 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 		}  //end handle common override list
 	}      // end Assemble Subsystem Common Table List ----------------
 
+	// Table plugins resolve ${OTS.artdaq.*} system variables (e.g. the trigger menu
+	// tag chosen in the Trigger Menu Editor) during activation, so refresh them from
+	// disk here and treat any change since the last activation as a content change.
+	StringMacros::loadPersistentSystemVariables();
+	const std::map<std::string, std::string> artdaqSystemVariables =
+	    StringMacros::systemVariables_["artdaq"];
+	const bool artdaqSystemVariablesChanged =
+	    artdaqSystemVariables != lastActivationArtdaqSystemVariables_;
+	if(artdaqSystemVariablesChanged)
+		__SUP_COUT__ << "artdaq system variables changed since last activation: "
+		             << StringMacros::mapToString(artdaqSystemVariables) << __E__;
+
 	// If requested, skip the (expensive) table group reload + re-activation when
 	// it can be proven redundant: same group name+key already active, no
 	// merge-in/override lists in play now or at the previous activation (those
-	// mutate active tables after load), and no scratch/temporary member versions
-	// (whose content can change without a key change). Group keys are otherwise
-	// immutable, so same key => same content.
+	// mutate active tables after load), no change in artdaq system variables, and
+	// no scratch/temporary member versions (whose content can change without a key
+	// change). Group keys are otherwise immutable, so same key => same content.
 	if(attemptSkipIfGroupUnchanged && mergeInTables.empty() && overrideTables.empty() &&
-	   !lastActivationHadMergeOrOverride_ &&
+	   !lastActivationHadMergeOrOverride_ && !artdaqSystemVariablesChanged &&
 	   theConfigurationManager_->getActiveGroupName(
 	       ConfigurationManager::GroupType::CONFIGURATION_TYPE) == theGroup.first &&
 	   theConfigurationManager_->getActiveGroupKey(
@@ -1068,6 +1080,7 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 	}
 
 	lastActivationHadMergeOrOverride_ = !mergeInTables.empty() || !overrideTables.empty();
+	lastActivationArtdaqSystemVariables_ = artdaqSystemVariables;
 }  //end configureInit()
 
 //==============================================================================

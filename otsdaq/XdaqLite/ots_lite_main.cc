@@ -631,8 +631,8 @@ int main(int argc, char** argv)
 	}
 	std::vector<AppSpec> specs;
 	std::string          url;
-	const size_t localIndex =
-	    contexts.empty() ? 0 : selectLocalContext(contexts, host, port);
+	const size_t         localIndex =
+        contexts.empty() ? 0 : selectLocalContext(contexts, host, port);
 	if(!contexts.empty())
 	{
 		specs = contexts[localIndex].apps;

@@ -166,8 +166,8 @@ std::string postSOAPToContext(const std::string& contextURL,
 
 	struct addrinfo hints;
 	std::memset(&hints, 0, sizeof(hints));
-	hints.ai_family   = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_family      = AF_UNSPEC;
+	hints.ai_socktype    = SOCK_STREAM;
 	struct addrinfo* res = nullptr;
 	if(getaddrinfo(host.c_str(), port.c_str(), &hints, &res) != 0 || !res)
 		XCEPT_RAISE(xdaq::exception::Exception,
@@ -241,8 +241,8 @@ std::string postSOAPToContext(const std::string& contextURL,
 	if(status != 200)
 		XCEPT_RAISE(xdaq::exception::Exception,
 		            "OTS_LITE: remote context " + contextURL + " returned HTTP " +
-		                std::to_string(status) + " for lid=" + std::to_string(lid) + ": " +
-		                response.substr(hdrEnd + 4));
+		                std::to_string(status) + " for lid=" + std::to_string(lid) +
+		                ": " + response.substr(hdrEnd + 4));
 
 	return response.substr(hdrEnd + 4);
 }  // end postSOAPToContext()
@@ -268,8 +268,8 @@ xoap::MessageReference xdaq::ApplicationContext::postSOAP(
 	// the target is in another context (process): send it over HTTP
 	std::string request;
 	msg->writeTo(request);
-	const std::string reply = postSOAPToContext(
-	    to.getContextDescriptor()->getURL(), to.getLocalId(), request);
+	const std::string reply =
+	    postSOAPToContext(to.getContextDescriptor()->getURL(), to.getLocalId(), request);
 
 	xoap::MessageReference replyMsg = xoap::createMessage();
 	replyMsg->readFrom(reply);
