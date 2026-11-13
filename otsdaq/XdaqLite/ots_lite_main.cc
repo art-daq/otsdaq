@@ -654,6 +654,17 @@ int main(int argc, char** argv)
 		if(s.module.empty() || handles.count(s.module) || loadErrors.count(s.module))
 			continue;
 		void* h = dlopen(s.module.c_str(), RTLD_NOW | RTLD_GLOBAL);
+#ifdef __APPLE__
+		// Configurations name modules libX.so (Linux); macOS builds libX.dylib. Try that name too.
+		const std::string soExt = ".so";
+		if(!h && s.module.size() > soExt.size() &&
+		   s.module.compare(s.module.size() - soExt.size(), soExt.size(), soExt) == 0)
+		{
+			const std::string dylib =
+			    s.module.substr(0, s.module.size() - soExt.size()) + ".dylib";
+			h = dlopen(dylib.c_str(), RTLD_NOW | RTLD_GLOBAL);
+		}
+#endif
 		if(!h)
 		{
 			// Not built under OTS_LITE (e.g. libVisualization.so); keep the rest of the context up.
