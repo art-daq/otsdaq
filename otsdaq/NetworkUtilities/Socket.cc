@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include <arpa/inet.h>
+#include <fcntl.h>  // for FD_CLOEXEC (macOS has no SOCK_CLOEXEC)
 #include <unistd.h>
 // #include <sys/socket.h>
 #include <netdb.h>
@@ -119,8 +120,14 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 		}
 
 		// make a socket:
+#ifdef SOCK_CLOEXEC
 		socketNumber_ =
 		    socket(res->ai_family, res->ai_socktype | SOCK_CLOEXEC, res->ai_protocol);
+#else  // macOS: no SOCK_CLOEXEC flag, so mark close-on-exec right after creating it
+		socketNumber_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		if(socketNumber_ >= 0)
+			fcntl(socketNumber_, F_SETFD, FD_CLOEXEC);
+#endif
 
 		__COUTT__ << "]\tSocket Number: " << socketNumber_
 		          << " for port: " << ntohs(socketAddress_.sin_port) << " initialized."
