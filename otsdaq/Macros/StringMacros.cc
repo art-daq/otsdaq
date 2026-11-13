@@ -14,6 +14,7 @@
 #include <iomanip>  // for std::setw, std::setfill
 #include <mutex>    // for loadPersistentSystemVariables
 #include <functional>
+#include <thread>  // for hardware_concurrency (macOS has no sched_getaffinity)
 
 using namespace ots;
 
@@ -32,10 +33,14 @@ unsigned int StringMacros::getConcurrencyCount(void)
 	catch(...)
 	{
 	}
-	cpu_set_t    mask;
 	unsigned int hw = 0;
+#ifdef __linux__
+	cpu_set_t mask;  // CPUs this process may run on (respects taskset/cgroups)
 	if(sched_getaffinity(0, sizeof(mask), &mask) == 0)
 		hw = CPU_COUNT(&mask);
+#else  // macOS has no CPU affinity API
+	hw = std::thread::hardware_concurrency();
+#endif
 	systemVariables_["System"]["logicalCores"] = std::to_string(hw);
 	return hw;
 }  //end getConcurrencyCount()
@@ -1809,8 +1814,15 @@ std::string StringMacros::exec(const char* cmd)
 	// relaunched xdaq cannot bind it. So fork, close every fd above stderr in the
 	// child, then exec the shell.
 	int outputPipe[2];
+#ifdef __linux__
 	if(pipe2(outputPipe, O_CLOEXEC) != 0)
 		__THROW__("pipe2() failed: " + std::string(strerror(errno)));
+#else  // macOS has no pipe2: pipe, then mark both ends close-on-exec
+	if(pipe(outputPipe) != 0)
+		__THROW__("pipe() failed: " + std::string(strerror(errno)));
+	fcntl(outputPipe[0], F_SETFD, FD_CLOEXEC);
+	fcntl(outputPipe[1], F_SETFD, FD_CLOEXEC);
+#endif
 
 	pid_t childPid = fork();
 	if(childPid < 0)

@@ -44,6 +44,9 @@ cet_set_compiler_flags(
  NO_UNDEFINED
  EXTRA_FLAGS -pedantic -D_LIBCPP_ENABLE_CXX17_REMOVED_FEATURES=1 ${DT_FLAG}
  )
+if(APPLE) # Apple clang warns where gcc does not (deprecated sprintf, ...): keep -Werror on Linux, warn on macOS
+	add_compile_options(-Wno-error)
+endif()
 
 # Debug streamer.
 string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC)
