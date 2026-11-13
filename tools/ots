@@ -631,12 +631,18 @@ while :; do
 done
 
 
-xdaqPrefix="setsid"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
-otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+setsidCmd="setsid"
+if ! command -v setsid >/dev/null 2>&1; then
+	# macOS has no setsid(1). perl's POSIX::setsid then exec keeps the same PID (so $! still tracks
+	# xdaq.exe) in a new session. No spaces: it is expanded unquoted as a command prefix below.
+	setsidCmd='perl -MPOSIX -esetsid;exec(@ARGV)or(exit(127))'
+fi
+xdaqPrefix="$setsidCmd"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+otsConsoleFwdPrefix="$setsidCmd" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
 
 if [ $VALGRIND ==  1 ]; then
 	valgrindTimestamp=$(date +%Y%m%d_%H%M%S)
-	xdaqPrefix="setsid valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind_xdaq_${valgrindTimestamp}.log"
+	xdaqPrefix="$setsidCmd valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind_xdaq_${valgrindTimestamp}.log"
 	info "Using xdaq launch prefix: ${xdaqPrefix}"
 fi
 
