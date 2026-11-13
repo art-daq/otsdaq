@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# macOS ships bash 3.2; this script needs bash 4+ ([[ -v ]], $BASHPID, associative arrays).
+# Rerun under Homebrew's bash (the lite installer requires it on macOS). Linux is unaffected.
+if [ "$(uname -s)" = Darwin ] && [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+	for b in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+		[ -x $b ] && exec $b "$0" "$@"
+	done
+	echo "ots needs bash 4 or newer; macOS has ${BASH_VERSION}. Run: brew install bash"
+	exit 1
+fi
+
 # Need this earlier to source local scripts
 SCRIPT_DIR="$(
  cd "$(dirname "$(readlink "$0" || printf %s "$0")")"
