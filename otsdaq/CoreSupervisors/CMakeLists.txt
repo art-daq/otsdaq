@@ -10,7 +10,7 @@ if(DEFINED ENV{OTS_LITE})
 	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES otsdaq::XdaqLite)
 else()
 	set(OTS_ARTDAQ_SUPERVISOR_SOURCES ARTDAQDataManagerSupervisor.cc ARTDAQFEDataManagerSupervisor.cc)
-	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES artdaq::DAQdata otsdaq::ARTDAQDataManager)
+	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES artdaq::DAQdata otsdaq::ARTDAQDataManager otsdaq::ARTDAQTableBase)
 endif()
 
 cet_make_library(LIBRARY_NAME CoreSupervisors
@@ -35,7 +35,6 @@ cet_make_library(LIBRARY_NAME CoreSupervisors
 		otsdaq::FECore
 		otsdaq::SOAPUtilities
 		otsdaq::CgiDataUtilities
-		otsdaq::ARTDAQTableBase
         XDAQ::config
         XDAQ::xgi
 		cppzmq # for publish/subscribe of data from FE to Supervisor

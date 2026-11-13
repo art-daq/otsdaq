@@ -105,9 +105,16 @@ std::string expandEnv(const std::string& s)
 	return out;
 }
 
-// Returns the context URL and the applications; modules are paired to the preceding
-// <xc:Application> as xdaq does (each Application is followed by its Module).
-std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
+struct ContextSpec
+{
+	std::string          url;
+	std::vector<AppSpec> apps;
+};
+
+// Returns every <xc:Context> in the partition with its applications (in file order);
+// modules are paired to the preceding <xc:Application> as xdaq does (each Application is
+// followed by its Module).
+std::vector<ContextSpec> parsePartition(const std::string& file)
 {
 	xercesc::XercesDOMParser parser;
 	parser.setValidationScheme(xercesc::XercesDOMParser::Val_Never);
@@ -117,7 +124,7 @@ std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
 	if(!doc || !doc->getDocumentElement())
 		throw std::runtime_error("cannot parse partition XML " + file);
 
-	std::string url;
+	std::vector<ContextSpec> contexts;
 	for(xercesc::DOMNode* c = doc->getDocumentElement()->getFirstChild(); c;
 	    c                   = c->getNextSibling())
 	{
@@ -126,7 +133,10 @@ std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
 		auto* ctx = static_cast<xercesc::DOMElement*>(c);
 		if(localName(ctx) != "Context")
 			continue;
-		url = expandEnv(xs(ctx->getAttribute(xercesc::XMLString::transcode("url"))));
+		contexts.emplace_back();
+		std::vector<AppSpec>& apps = contexts.back().apps;
+		contexts.back().url =
+		    expandEnv(xs(ctx->getAttribute(xercesc::XMLString::transcode("url"))));
 		for(xercesc::DOMNode* a = ctx->getFirstChild(); a; a = a->getNextSibling())
 		{
 			if(a->getNodeType() != xercesc::DOMNode::ELEMENT_NODE)
@@ -152,9 +162,46 @@ std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
 				apps.back().module = expandEnv(xs(el->getTextContent()));
 			}
 		}
-		break;  // one context per process
 	}
-	return url;
+	return contexts;
+}
+
+// Splits "http://host:port[/...]" into host and port (port 0 if absent).
+void splitContextURL(const std::string& url, std::string& host, int& port)
+{
+	std::string hp     = url;
+	size_t      scheme = hp.find("://");
+	if(scheme != std::string::npos)
+		hp = hp.substr(scheme + 3);
+	size_t slash = hp.find('/');
+	if(slash != std::string::npos)
+		hp = hp.substr(0, slash);
+	size_t colon = hp.rfind(':');
+	host         = colon == std::string::npos ? hp : hp.substr(0, colon);
+	port         = colon == std::string::npos ? 0 : std::atoi(hp.c_str() + colon + 1);
+}
+
+// Chooses the context this process serves: the one on our port (and, if several share the
+// port, on our host). Falls back to the first context so a single-context partition
+// behaves exactly as before.
+size_t selectLocalContext(const std::vector<ContextSpec>& contexts,
+                          const std::string&              host,
+                          int                             port)
+{
+	size_t byPort = contexts.size();
+	for(size_t i = 0; i < contexts.size(); ++i)
+	{
+		std::string h;
+		int         p = 0;
+		splitContextURL(contexts[i].url, h, p);
+		if(p != port)
+			continue;
+		if(h == host || h == host.substr(0, host.find('.')))
+			return i;
+		if(byPort == contexts.size())
+			byPort = i;
+	}
+	return byPort < contexts.size() ? byPort : 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -572,16 +619,24 @@ int main(int argc, char** argv)
 	const char* web = getenv("OTSDAQ_WEB_PATH");
 	ctx.webRoot     = web ? web : "";
 
-	std::vector<AppSpec> specs;
-	std::string          url;
+	std::vector<ContextSpec> contexts;
 	try
 	{
-		url = parsePartition(partition, specs);
+		contexts = parsePartition(partition);
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << "ots_lite_main: " << e.what() << "\n";
 		return 1;
+	}
+	std::vector<AppSpec> specs;
+	std::string          url;
+	const size_t         localIndex =
+        contexts.empty() ? 0 : selectLocalContext(contexts, host, port);
+	if(!contexts.empty())
+	{
+		specs = contexts[localIndex].apps;
+		url   = contexts[localIndex].url;
 	}
 	if(url.empty())
 		url = "http://" + host + ":" + std::to_string(port);
@@ -636,6 +691,19 @@ int main(int argc, char** argv)
 			ctx.context->setUnavailableReason(s.lid, reason);
 			unloadable.insert(s.lid);
 		}
+	}
+	// Applications of the other contexts in the partition are registered as remote
+	// descriptors (the Gateway and AllSupervisorInfo enumerate them; SOAP to them goes
+	// over HTTP, see postSOAP).
+	for(size_t i = 0; i < contexts.size(); ++i)
+	{
+		if(i == localIndex)
+			continue;
+		for(const auto& s : contexts[i].apps)
+			ctx.context->addRemoteApplication(
+			    s.className, s.lid, s.instance, contexts[i].url);
+		std::cout << "ots_lite_main: registered " << contexts[i].apps.size()
+		          << " remote applications of context " << contexts[i].url << std::endl;
 	}
 	for(const auto& s : specs)
 	{

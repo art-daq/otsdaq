@@ -7,6 +7,13 @@
 #include "xgi/Input.h"
 #include "xgi/Output.h"
 
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+#include <cstdlib>
+#include <cstring>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -132,6 +139,115 @@ void xdaq::ApplicationContext::setApplication(unsigned int lid, Application* app
 	localApps_.emplace_back(lid, app);
 }
 
+namespace
+{
+// Remote SOAP: a minimal blocking HTTP/1.1 POST of the SOAP envelope to another context's
+// /urn:xdaq-application:lid=<N>, which ots_lite_main's serveApp dispatches to the
+// application. That server answers with Content-Length and Connection: close, so the
+// reply is read to end-of-stream. Returns the response body; raises on failure.
+std::string postSOAPToContext(const std::string& contextURL,
+                              unsigned int       lid,
+                              const std::string& soapBody)
+{
+	std::string hostPort = contextURL;
+	size_t      scheme   = hostPort.find("://");
+	if(scheme != std::string::npos)
+		hostPort = hostPort.substr(scheme + 3);
+	size_t slash = hostPort.find('/');
+	if(slash != std::string::npos)
+		hostPort = hostPort.substr(0, slash);
+	std::string host = hostPort, port = "80";
+	size_t      colon = hostPort.rfind(':');
+	if(colon != std::string::npos)
+	{
+		host = hostPort.substr(0, colon);
+		port = hostPort.substr(colon + 1);
+	}
+
+	struct addrinfo hints;
+	std::memset(&hints, 0, sizeof(hints));
+	hints.ai_family      = AF_UNSPEC;
+	hints.ai_socktype    = SOCK_STREAM;
+	struct addrinfo* res = nullptr;
+	if(getaddrinfo(host.c_str(), port.c_str(), &hints, &res) != 0 || !res)
+		XCEPT_RAISE(xdaq::exception::Exception,
+		            "OTS_LITE: cannot resolve remote context " + contextURL);
+
+	int fd = -1;
+	for(struct addrinfo* p = res; p; p = p->ai_next)
+	{
+		fd = ::socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+		if(fd < 0)
+			continue;
+		if(::connect(fd, p->ai_addr, p->ai_addrlen) == 0)
+			break;
+		::close(fd);
+		fd = -1;
+	}
+	freeaddrinfo(res);
+	if(fd < 0)
+		XCEPT_RAISE(xdaq::exception::Exception,
+		            "OTS_LITE: cannot connect to remote context " + contextURL +
+		                " (is that context running?)");
+
+	// FSM transitions can take a long time; wait generously for the reply
+	struct timeval tv;
+	tv.tv_sec  = 1200;
+	tv.tv_usec = 0;
+	setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+
+	std::ostringstream req;
+	req << "POST /urn:xdaq-application:lid=" << lid << " HTTP/1.1\r\n"
+	    << "Host: " << hostPort << "\r\n"
+	    << "Content-Type: text/xml; charset=utf-8\r\n"
+	    << "SOAPAction: \"\"\r\n"
+	    << "Content-Length: " << soapBody.size() << "\r\n"
+	    << "Connection: close\r\n\r\n"
+	    << soapBody;
+	const std::string request = req.str();
+
+	size_t sent = 0;
+	while(sent < request.size())
+	{
+		ssize_t n = ::write(fd, request.data() + sent, request.size() - sent);
+		if(n <= 0)
+		{
+			::close(fd);
+			XCEPT_RAISE(xdaq::exception::Exception,
+			            "OTS_LITE: failed sending SOAP to remote context " + contextURL);
+		}
+		sent += n;
+	}
+
+	std::string response;
+	char        buf[4096];
+	while(true)
+	{
+		ssize_t n = ::read(fd, buf, sizeof(buf));
+		if(n <= 0)
+			break;
+		response.append(buf, n);
+	}
+	::close(fd);
+
+	size_t hdrEnd = response.find("\r\n\r\n");
+	if(hdrEnd == std::string::npos || response.size() < 12)
+		XCEPT_RAISE(xdaq::exception::Exception,
+		            "OTS_LITE: no valid reply from remote context " + contextURL +
+		                " (lid=" + std::to_string(lid) + ")");
+
+	int status = std::atoi(response.c_str() + 9);  // "HTTP/1.1 200 OK"
+	if(status != 200)
+		XCEPT_RAISE(xdaq::exception::Exception,
+		            "OTS_LITE: remote context " + contextURL + " returned HTTP " +
+		                std::to_string(status) + " for lid=" + std::to_string(lid) +
+		                ": " + response.substr(hdrEnd + 4));
+
+	return response.substr(hdrEnd + 4);
+}  // end postSOAPToContext()
+}  // namespace
+
 xoap::MessageReference xdaq::ApplicationContext::postSOAP(
     xoap::MessageReference msg,
     const ApplicationDescriptor& /*from*/,
@@ -149,10 +265,15 @@ xoap::MessageReference xdaq::ApplicationContext::postSOAP(
 		                " (" + to.getClassName() +
 		                ") is in this context but not constructed yet");
 	}
-	XCEPT_RAISE(xdaq::exception::Exception,
-	            "OTS_LITE: SOAP to a remote context is not implemented yet (target lid=" +
-	                std::to_string(to.getLocalId()) + " at " +
-	                to.getContextDescriptor()->getURL() + ")");
+	// the target is in another context (process): send it over HTTP
+	std::string request;
+	msg->writeTo(request);
+	const std::string reply =
+	    postSOAPToContext(to.getContextDescriptor()->getURL(), to.getLocalId(), request);
+
+	xoap::MessageReference replyMsg = xoap::createMessage();
+	replyMsg->readFrom(reply);
+	return replyMsg;
 }
 
 // ---------------------------------------------------------------------------
