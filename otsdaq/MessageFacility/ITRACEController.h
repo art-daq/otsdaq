@@ -9,6 +9,10 @@
 #include <unordered_map>
 #include "otsdaq/Macros/StringMacros.h"
 
+#ifndef HOST_NAME_MAX  // Linux <limits.h> defines it; macOS does not (POSIX allows 255)
+#define HOST_NAME_MAX 255
+#endif
+
 #ifndef OTS_MAXLITE  // ots maxlite has no TRACE: TRACEController maps the masks to OtsLog levels
 #include "TRACE/trace.h"
 
