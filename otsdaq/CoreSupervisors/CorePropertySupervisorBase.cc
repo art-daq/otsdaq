@@ -3,7 +3,11 @@
 #include "otsdaq/MessageFacility/TRACEController.h"
 
 #include <sys/statvfs.h>  // for disk space checking with statvfs
+#ifdef __APPLE__
+#include <sys/sysctl.h>   // for sysctl hw.memsize to get total memory (no sysinfo() on macOS)
+#else
 #include <sys/sysinfo.h>  // for sysinfo() to get total memory
+#endif
 #include <cstdint>        // for uint64_t
 
 using namespace ots;
@@ -50,11 +54,19 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		{
 			StringMacros::getConcurrencyCount(); //fills systemVariables_["System"]["logicalCores"]
 
+#ifdef __APPLE__
+			uint64_t memBytes = 0;
+			size_t   memLen   = sizeof(memBytes);
+			if(sysctlbyname("hw.memsize", &memBytes, &memLen, nullptr, 0) == 0)
+			{
+				uint64_t totalMemMB = memBytes / (1024 * 1024);
+#else
 			struct sysinfo memInfo;
 			if(sysinfo(&memInfo) == 0)
 			{
 				uint64_t totalMemMB =
 					static_cast<uint64_t>(memInfo.totalram) * memInfo.mem_unit / (1024 * 1024);
+#endif
 				StringMacros::systemVariables_["System"]["totalMemoryMB"] =
 					std::to_string(totalMemMB);
 			}
