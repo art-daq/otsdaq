@@ -605,7 +605,7 @@ try
 		sleepUnlessStopped(5);  // stagger the two loops a bit
 	__COUTV__(doDisconnected);
 
-	std::chrono::_V2::system_clock::time_point lastStatus =
+	std::chrono::high_resolution_clock::time_point lastStatus =  // not _V2:: (libstdc++-internal name)
 	    std::chrono::high_resolution_clock::now();
 	time_t lastSlowStatusWarnTime =
 	    time(0);  // suppress during startup while remote gateways are coming up
