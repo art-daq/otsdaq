@@ -53,6 +53,13 @@ displayLogTail() {
 # Bash defines HOSTNAME but it's possible that it might not be a FQDN, this specifically enforces that it will be
 export HOSTNAME=${HOSTNAME:-`hostname -f`}
 
+# macOS laptops off the lab network often have a host name that does not resolve (not in DNS),
+# so neither the launch check nor a browser can reach http://<name>:<port>. Use localhost then.
+if [ "$(uname -s)" = Darwin ] && ! perl -MSocket -e 'exit(!gethostbyname($ARGV[0]))' "$HOSTNAME" 2>/dev/null; then
+	echo "ots: host name '${HOSTNAME}' does not resolve on this network; using 'localhost'."
+	export HOSTNAME=localhost
+fi
+
 if [ "x$THIS_HOST" == "x" ]; then
 	THIS_HOST="${HOSTNAME}"
 fi
