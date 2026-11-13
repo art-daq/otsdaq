@@ -4,6 +4,8 @@ _otsdaq_ is a Ready-to-Use data-acquisition (DAQ) solution aimed at scaling down
 
 _otsdaq_ provides a library of supported front-end boards and firmware modules which implement a custom UDP protocol.   Additionally, an integrated Run Control GUI and readout software are provided, preconfigured to communicate with _otsdaq_ firmware.
 
+_otsdaq_ is fully Artificial Intelligence (AI) and Super Intelligence (SI) enabled, at all levels, and can be fully engaged by Large Language Model (LLM) agents. From installing and configuring a system, through driving the State Machine, reading and writing front-end registers and visualizing the data, to maintaining its own documentation and tutorials, an LLM agent can do the work. The skills and scripts that teach an agent how are in this repository: [ai_skills](https://github.com/art-daq/otsdaq/tree/develop/ai_skills) and [ai_scripts](https://github.com/art-daq/otsdaq/tree/develop/ai_scripts). To try it, follow the tutorial [Driving otsdaq with AI Agents](https://otsdaq.fnal.gov/tutorials/using-ai-agents-with-otsdaq.html).
+
 <a id="install"></a>
 
 # Installing otsdaq
