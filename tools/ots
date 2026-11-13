@@ -881,6 +881,32 @@ function reportPortOwner
 }
 export -f reportPortOwner
 
+#############################
+# Tell the user how to run this install next to another one whose http port is taken.
+# OTS_MAIN_PORT (set in setup_ots.sh, default 2015) is the one setting to change: normal mode, Wiz
+# mode (unless OTS_WIZ_MODE_MAIN_PORT overrides it) and MacroMaker mode all use it, and ports derived
+# from it move with it: message forwarding (+30000, +30001) and data publishing (-2). So installs
+# must be at least 10 apart, not 1 apart.
+function suggestPortOffset
+{
+	local busyPort=$1
+	out "${Bold}Port ${busyPort} is taken by another program or another otsdaq install on this computer.${RstClr}"
+	out "To run this install alongside it, give this install its own block of ports. In this install's"
+	out "setup_ots.sh, replace the line  export OTS_MAIN_PORT=2015  with, for example:"
+	echo
+	echo '    # N = 0, 1, 2, ... unique per install on this computer: ports 2015, 2025, 2035, ...'
+	echo '    export OTS_MAIN_PORT=$((2015 + 10 * N))'
+	echo
+	echo "  or, one install per user on a shared computer, pick the offset from the user id:"
+	echo
+	echo '    export OTS_MAIN_PORT=$((2015 + 10 * ($(id -u) % 100)))'
+	echo
+	out "Keep installs at least 10 apart (message forwarding uses OTS_MAIN_PORT+30000 and +30001)."
+	out "Then open a new terminal, run 'source setup_ots.sh', and start ots again."
+	echo
+}
+export -f suggestPortOffset
+
 OTS_HTTP_VERIFY_ATTEMPTS=12 #x5s = 60s of patience once alive file is seen
 OTS_HTTP_VERIFY_FAILURES=0  #consecutive http failures with alive file present
 function waitForContextHttp
@@ -1488,6 +1514,7 @@ launchOTSMacromaker() {
 		OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 		# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 		if [ "$OTS_CONTEXT_UP" != "bad" ]; then
+			suggestPortOffset ${PORT}
 			die "MacroMaker mode context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 		fi
 	fi
@@ -1712,7 +1739,7 @@ launchOTSWiz() {
 		cp ${USER_DATA}/MessageFacilityConfigurations/MessageFacility_dev.fcl ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl
 	fi
 	PORTMFOFF=$((30000 + $PORT))
-	sed -i s/30000/${PORTMFOFF}/g ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl
+	sed -i.otsbak s/30000/${PORTMFOFF}/g ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl; rm -f ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl.otsbak  # -i.otsbak works on GNU and BSD (macOS) sed
 
 	#this fcl tells the MF library used by ots source how to behave
 	export OTSDAQ_LOG_FHICL=${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl
@@ -1730,8 +1757,8 @@ launchOTSWiz() {
 
 		#modify the PORT to avoid wiz mode conflicts
 		PORTMFOFF1=$((30001 + $PORT)) #make PORT + 1
-		sed -i s/30001/${PORTMFOFF1}/g ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg
-		sed -i s/30000/${PORTMFOFF}/g ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg
+		sed -i.otsbak s/30001/${PORTMFOFF1}/g ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg
+		sed -i.otsbak s/30000/${PORTMFOFF}/g ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg; rm -f ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg.otsbak
 
 		#RAR nov 2019 -- always send forwarder to file (with new trace, verbose mode is handled by trace, no need to printout twice)
 		#if [ $QUIET == 1 ]; then
@@ -1780,7 +1807,7 @@ launchOTSWiz() {
 
 
 
-	out "Starting wiz mode on PORT ${PORT}; to change, please setup environment variable OTS_WIZ_MODE_MAIN_PORT."
+	out "Starting wiz mode on PORT ${PORT}; to change, please setup environment variable OTS_MAIN_PORT (OTS_WIZ_MODE_MAIN_PORT overrides it for Wiz mode only)."
 	out "Wiz mode ots context is defined by ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml"
 
 	#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
@@ -1794,6 +1821,7 @@ launchOTSWiz() {
 		OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if previous http server has gone down
 		# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 		if [ "$OTS_CONTEXT_UP" != "bad" ]; then
+			suggestPortOffset ${PORT}
 			die "Wiz context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 		fi
 	fi
@@ -2298,6 +2326,7 @@ launchOTS() {
 								# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 								if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 									reportPortOwner ${PORT} "gateway pre-launch check, still in use after retry"
+									suggestPortOffset ${PORT}
 									die "Gateway context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 								fi
 							fi
@@ -2528,6 +2557,7 @@ launchOTS() {
 			# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 			if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 				reportPortOwner ${PORT} "context '${xdaqContextUID[$i]}' pre-launch check, still in use after retry"
+				suggestPortOffset ${PORT}
 				die "Context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 			fi
 		fi
