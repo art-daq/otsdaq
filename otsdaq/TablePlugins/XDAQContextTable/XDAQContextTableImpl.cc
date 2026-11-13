@@ -556,26 +556,23 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 	//	close context
 	// close partition
 
-	char tmp[200];
+	// Written straight to the stream: a fixed char tmp[200] buffer with sprintf overflowed
+	// (the GatewaySupervisor <xc:Application> line with its icon attributes is 208 chars),
+	// which macOS's stack protector aborts on and which corrupts the stack elsewhere.
 	for(XDAQContext& context : contexts_)
 	{
 		//__COUT__ << context.contextUID_ << __E__;
 
-		sprintf(tmp,
-		        "\t<!-- ContextUID='%s' sourceConfig='%s' -->",
-		        context.contextUID_.c_str(),
-		        context.sourceConfig_.c_str());
-		out << tmp << "\n";
+		out << "\t<!-- ContextUID='" << context.contextUID_ << "' sourceConfig='"
+		    << context.sourceConfig_ << "' -->"
+		    << "\n";
 
 		if(!context.status_)  // comment out if disabled
 			out << "\t<!--\n";
 
-		sprintf(tmp,
-		        "\t<xc:Context id=\"%u\" url=\"%s:%u\">",
-		        context.id_,
-		        context.address_.c_str(),
-		        context.port_);
-		out << tmp << "\n\n";
+		out << "\t<xc:Context id=\"" << context.id_ << "\" url=\"" << context.address_ << ":"
+		    << context.port_ << "\">"
+		    << "\n\n";
 
 		for(XDAQApplication& app : context.applications_)
 		{
@@ -583,40 +580,22 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 
 			if(context.status_)
 			{
-				sprintf(
-				    tmp,
-				    "\t\t<!-- Application GroupID = '%s' UID='%s' sourceConfig='%s' -->",
-				    app.applicationGroupID_.c_str(),
-				    app.applicationUID_.c_str(),
-				    app.sourceConfig_.c_str());
-				out << tmp << "\n";
+				out << "\t\t<!-- Application GroupID = '" << app.applicationGroupID_
+				    << "' UID='" << app.applicationUID_ << "' sourceConfig='"
+				    << app.sourceConfig_ << "' -->"
+				    << "\n";
 
 				if(!app.status_)  // comment out if disabled
 					out << "\t\t<!--\n";
 			}
 
+			out << "\t\t<xc:Application class=\"" << app.class_ << "\" id=\"" << app.id_
+			    << "\" instance=\"" << app.instance_ << "\" network=\"" << app.network_
+			    << "\" ";
 			if(app.class_ == "ots::GatewaySupervisor")  // add otsdaq icons
-				sprintf(
-				    tmp,
-				    "\t\t<xc:Application class=\"%s\" id=\"%u\" instance=\"%u\" "
-				    "network=\"%s\" icon=\"/WebPath/images/otsdaqIcons/logo_square.png\" "
-				    "icon16x16=\"/WebPath/images/otsdaqIcons/favicon-16x16.png\" "
-				    "group=\"%s\">\n",
-				    app.class_.c_str(),
-				    app.id_,
-				    app.instance_,
-				    app.network_.c_str(),
-				    app.group_.c_str());
-			else
-				sprintf(tmp,
-				        "\t\t<xc:Application class=\"%s\" id=\"%u\" instance=\"%u\" "
-				        "network=\"%s\" group=\"%s\">\n",
-				        app.class_.c_str(),
-				        app.id_,
-				        app.instance_,
-				        app.network_.c_str(),
-				        app.group_.c_str());
-			out << tmp;
+				out << "icon=\"/WebPath/images/otsdaqIcons/logo_square.png\" "
+				       "icon16x16=\"/WebPath/images/otsdaqIcons/favicon-16x16.png\" ";
+			out << "group=\"" << app.group_ << "\">\n";
 
 			////////////////////// properties
 			int foundColon = app.class_.rfind(':');
@@ -640,13 +619,8 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 				if(!appProperty.status_)
 					out << "\t\t\t\t<!--\n";
 
-				sprintf(tmp,
-				        "\t\t\t\t<%s xsi:type=\"%s\">%s</%s>\n",
-				        appProperty.name_.c_str(),
-				        appProperty.type_.c_str(),
-				        appProperty.value_.c_str(),
-				        appProperty.name_.c_str());
-				out << tmp;
+				out << "\t\t\t\t<" << appProperty.name_ << " xsi:type=\"" << appProperty.type_
+				    << "\">" << appProperty.value_ << "</" << appProperty.name_ << ">\n";
 
 				if(!appProperty.status_)
 					out << "\t\t\t\t-->\n";
@@ -656,8 +630,7 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 
 			out << "\t\t</xc:Application>\n";
 
-			sprintf(tmp, "\t\t<xc:Module>%s</xc:Module>\n", app.module_.c_str());
-			out << tmp;
+			out << "\t\t<xc:Module>" << app.module_ << "</xc:Module>\n";
 
 			if(context.status_ && !app.status_)
 				out << "\t\t-->\n";
