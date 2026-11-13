@@ -8462,9 +8462,10 @@ try
 	}
 	startBackgroundWorkLoops();
 	CorePropertySupervisorBase::reloadSupervisorProperties();
-	__COUT_INFO__ << "Gateway UDP/app-status work loops restarted and request permissions "
-	                 "reloaded from the active Context group."
-	              << __E__;
+	__COUT_INFO__
+	    << "Gateway UDP/app-status work loops restarted and request permissions "
+	       "reloaded from the active Context group."
+	    << __E__;
 	RunControlStateMachine::theProgressBar_.step();
 
 	// important to give time for StartOTS script to recognize command and for apps to
