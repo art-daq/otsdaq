@@ -716,7 +716,14 @@ int main(int argc, char** argv)
 		std::cout << "ots_lite_main: registered " << contexts[i].apps.size()
 		          << " remote applications of context " << contexts[i].url << std::endl;
 	}
-	for(const auto& s : specs)
+	// Construct the Console Supervisor first: messages go to it over UDP (through otsConsoleFwd),
+	// and UDP drops anything sent before its receive socket is open, so constructing it after the
+	// other apps lost their start-up messages (e.g. the Wizard's). Other apps keep their order.
+	std::vector<AppSpec> constructionOrder(specs);
+	std::stable_partition(constructionOrder.begin(),
+	                      constructionOrder.end(),
+	                      [](const AppSpec& a) { return a.className == "ots::ConsoleSupervisor"; });
+	for(const auto& s : constructionOrder)
 	{
 		if(unloadable.count(s.lid))
 			continue;
