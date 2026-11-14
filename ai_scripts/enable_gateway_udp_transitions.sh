@@ -2,7 +2,7 @@
 # Enable Gateway UDP state-change transitions via the ConfigGUI UDP API.
 #
 # This is the reference workflow for remote config changes without DB access:
-#   1. Edit the three UDP fields (each edit returns a temporary table version;
+#   1. Edit the four fields (the three UDP fields and status monitoring) (each edit returns a temporary table version;
 #      the next edit targets the version the previous reply returned)
 #   2. Persist the last temporary version as a real version
 #   3. Save a new Context group with the updated table
@@ -12,7 +12,7 @@
 # The gateway opens a socket on IPAddressForStateChangesOverUDP:PortForStateChangesOverUDP
 # at construction. Enabling the flag while those are still the mockup defaults
 # (DEFAULT:0) makes the gateway core-dump at startup, so this script REQUIRES
-# the IP and port and sets all three fields in the same table version.
+# the IP and port and sets all the fields in the same table version.
 #
 # Prerequisites:
 #   - source setup_ots.sh
@@ -43,6 +43,7 @@ TABLE="GatewaySupervisorTable"
 COL_IP="IPAddressForStateChangesOverUDP"
 COL_PORT="PortForStateChangesOverUDP"
 COL_ENABLE="EnableStateChangesOverUDP"
+COL_MON="EnableApplicationStatusMonitoring"   # without it every app reads "Not Monitored" and transition results are invisible over UDP
 
 if ! [[ "$STATE_IP" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "ERROR: stateChangeIP '$STATE_IP' must be a numeric IPv4 address (Socket.cc rejects names and DEFAULT)."
@@ -98,22 +99,25 @@ echo "$TABLE record UID: $GW_UID"
 echo
 echo "--- Current values ---"
 TREE=$(cfg_ro getTreeView tableGroup="$GROUP_NAME" tableGroupKey="$GROUP_KEY" startPath=/$TABLE depth=2)
-tree_value() { echo "$TREE" | grep -A1 "$1" | grep -oP "value='\K[^']+" | head -1; }
+tree_value() { echo "$TREE" | grep -A1 "<node value='$1'>" | grep -oP "<value value='\K[^']+" | head -1; }
 CUR_IP=$(tree_value "$COL_IP")
 CUR_PORT=$(tree_value "$COL_PORT")
 CUR_ENABLE=$(tree_value "$COL_ENABLE")
+CUR_MON=$(tree_value "$COL_MON")
 echo "$COL_IP = $CUR_IP"
 echo "$COL_PORT = $CUR_PORT"
 echo "$COL_ENABLE = $CUR_ENABLE"
+echo "$COL_MON = $CUR_MON"
 
 if [ "$CUR_IP" = "$STATE_IP" ] && [ "$CUR_PORT" = "$STATE_PORT" ] && \
-   { [ "$CUR_ENABLE" = "Yes" ] || [ "$CUR_ENABLE" = "1" ]; }; then
+   { [ "$CUR_ENABLE" = "Yes" ] || [ "$CUR_ENABLE" = "1" ]; } && \
+   { [ "$CUR_MON" = "Yes" ] || [ "$CUR_MON" = "1" ]; }; then
     echo
     echo "Already enabled on $STATE_IP:$STATE_PORT! Nothing to do."
     exit 0
 fi
 
-# Step 1: Edit the three cells, chaining the temporary version from each reply
+# Step 1: Edit the four cells, chaining the temporary version from each reply
 # (the server may return a different temporary number on each edit).
 edit_cell() {
     local version="$1" column="$2" value="$3" result saved
@@ -121,6 +125,10 @@ edit_cell() {
         targetTable="$TABLE" targetTableVersion="$version" \
         targetUID="$GW_UID" targetColumn="$column" \
         newValue="$value" editNodeType=value)
+    if echo "$result" | grep -q "is the same as the current value"; then
+        echo "$version"   # already set: keep the same table version, nothing to save
+        return 0
+    fi
     if echo "$result" | grep -q "<Error"; then
         echo "ERROR in saveTreeNodeEdit $column:" >&2
         echo "$result" | grep -oP "Error value='\K[^']+" >&2
@@ -135,13 +143,15 @@ edit_cell() {
 }
 
 echo
-echo "--- Step 1: Edit $COL_IP, $COL_PORT, $COL_ENABLE ---"
+echo "--- Step 1: Edit $COL_IP, $COL_PORT, $COL_ENABLE, $COL_MON ---"
 TEMP_VERSION=$(edit_cell "$CURRENT_VERSION" "$COL_IP" "$STATE_IP")
 echo "$COL_IP -> $STATE_IP (temporary version $TEMP_VERSION)"
 TEMP_VERSION=$(edit_cell "$TEMP_VERSION" "$COL_PORT" "$STATE_PORT")
 echo "$COL_PORT -> $STATE_PORT (temporary version $TEMP_VERSION)"
 TEMP_VERSION=$(edit_cell "$TEMP_VERSION" "$COL_ENABLE" "1")
 echo "$COL_ENABLE -> 1 (temporary version $TEMP_VERSION)"
+TEMP_VERSION=$(edit_cell "$TEMP_VERSION" "$COL_MON" "1")
+echo "$COL_MON -> 1 (temporary version $TEMP_VERSION)"
 
 # Step 2: Persist the temporary version
 echo
@@ -158,7 +168,7 @@ fi
 NEW_VERSION=$(echo "$SAVE_RESULT" | grep -oP "savedVersion value='\K[^']+")
 echo "New version: $NEW_VERSION"
 
-# Verify all three cells before building a group
+# Verify the cells before building a group
 # cells in the reply are URL-encoded (127.0.0.1 arrives as 127%2E0%2E0%2E1): decode before comparing
 VERIFY=$(cfg_ro getSpecificTable tableName="$TABLE" version="$NEW_VERSION" \
     | python3 -c 'import sys, urllib.parse; sys.stdout.write(urllib.parse.unquote(sys.stdin.read()))')
