@@ -144,13 +144,23 @@ ots_cfg_udp_test 127.0.0.1 2010 activateTableGroup \
 
 **If ots fails to start after an activation** (`ots` reports the gateway
 process exited during launch and prints the crash lines from
-`$USER_DATA/Logs/otsdaq_quiet_run-gateway-*.txt`), revert without the GUI using
+`$USER_DATA/Logs/otsdaq_quiet_run-gateway-*.txt`; it relaunches at most 3 times,
+then gives up), revert without the GUI using
 `ai_scripts/revert_active_table_group.sh` (see below). It edits
 `$SERVICE_DATA_PATH/ActiveTableGroups.cfg`, which is plain text — pairs of lines
 `<group name>` / `<key>` for Context, Backbone, Iterate, Configuration. Set the
 Context key back to the previous working key (the one reported by
 `getActiveTableGroups` before the activation) and relaunch `ots`. The bad group
 stays in the database; fix the table and save a new group.
+
+A context can also pass the launch checks and exit a few seconds later. About
+30 s after a launch, `ots` checks every context it started again and reports
+each one that stopped (`... process (PID ...) is no longer alive: it exited
+within 30 s after launch.`) with the same crash lines from its log. Processes
+that `ots` killed on purpose (`ots -k`, a relaunch, Shutdown) are not reported.
+When `ots` is run with its output captured (for example `ots 2>&1 | tail`), the
+command returns only after this check, so about 30 s later;
+`OTS_LATE_EXIT_CHECK_SECONDS` changes the delay (`0` turns the check off).
 
 Other useful write requests (same parameter names as the browser):
 

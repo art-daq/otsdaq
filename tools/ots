@@ -733,6 +733,10 @@ fi
 OTSDAQ_STARTOTS_ACTION_FILE="${USER_DATA}/ServiceData/StartOTS_action_${THIS_HOST}.cmd" #the targeted hostname action script gives commands to StartOTS scripts running on that host
 OTSDAQ_STARTOTS_QUIT_FILE="${USER_DATA}/ServiceData/StartOTS_action_quit.cmd" #the global quit gives exit commonds to the non-gateway StartOTS scripts
 OTSDAQ_STARTOTS_LOCAL_QUIT_FILE=".StartOTS_${OTS_OWNER}_${OTS_SETUP_TYPE}_action_quit.cmd" #per-(owner,setup-type) local quit: removes only other StartOTS calls of the SAME setup type from the same directory (so e.g. a DQM subsystem relaunch does not kill the main system in the same dir)
+OTSDAQ_STARTOTS_KILLED_PIDS_FILE="${USER_DATA}/ServiceData/StartOTS_killed_pids_${THIS_HOST}.txt" #process IDs killed on purpose by killproc (ots -k, relaunch, Shutdown), so the check after launch does not report them as exited
+if [ -f "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}" ] && [ $(wc -l < "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}") -gt 1000 ]; then #keep the file small
+	tail -n 200 "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}" > "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}.tmp" && mv -f "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}.tmp" "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}"
+fi
 
 if [ $ISREMOTE == 0 ]; then
 	out "ots script path     = ${SCRIPT_DIR}/ots         "
@@ -768,6 +772,11 @@ function killproc
 		out "${Red}${Rev}Killing process ID ${pid} ${type}${RstClr}"
 	fi
 
+	#record the kill, so reportContextsExitedAfterLaunch does not report this process as exited
+	if [ -n "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE:-}" ]; then
+		{ echo "${pid}" >> "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}"; } 2>/dev/null
+	fi
+
 	count=10
 	kill -9 ${pid} >/dev/null 2>&1  #gentler abort sig seems to cause core dumps
 	# kill -0 ${pid} >/dev/null 2>&1
@@ -787,24 +796,44 @@ export -f killproc
 #############################
 # Check if a launched process has already exited.
 # Returns 0 if the process exited (and prints the crash cause), 1 if still running.
+# Optional 4th argument: what to say about the exit (default "exited during launch.").
 function reportExitedProcess
 {
 	local checkPid=$1
 	local checkLog=${2:-}
 	local checkLabel=${3:-Process}
+	local checkWhat=${4:-exited during launch.}
 
 	kill -0 ${checkPid} >/dev/null 2>&1
 	if [ $? -eq 0 ]; then
 		return 1
 	fi
 
-	error "${checkLabel} process (PID ${checkPid}) exited during launch."
+	error "${checkLabel} process (PID ${checkPid}) ${checkWhat}"
 
-	if [ -n "$checkLog" ] && [ -f "$checkLog" ]; then
-		local crashLine
-		crashLine=$(grep -n -E 'terminate called|what\(\):|FATAL|Segmentation fault|Aborted' "$checkLog" | tail -1 | cut -d: -f1)
+	if [ "${QUIET:-1}" == 0 ]; then #verbose mode: the process wrote to the terminal, and an existing log file is from an earlier quiet run
+		out "Verbose mode, so there is no log file: the ${checkLabel} output printed above shows the cause."
+	elif [ -n "$checkLog" ] && [ -f "$checkLog" ]; then
+		local crashLines
+		local crashLine=
+		local firstCrashLine
+		# 'ots_lite_main: fatal' is the first line of the crash backtrace printed by ots lite (SIGSEGV, SIGABRT, SIGBUS)
+		crashLines=($(grep -n -E 'terminate called|what\(\):|FATAL|Segmentation fault|Aborted|ots_lite_main: fatal' "$checkLog" | cut -d: -f1))
+		if [ ${#crashLines[@]} -gt 0 ]; then
+			crashLine=${crashLines[$(( ${#crashLines[@]} - 1 ))]}
+			# a crash message is among the last lines a process writes (before a backtrace of up to
+			# 64 lines); an older match, e.g. a handled error long before the exit, would mislead
+			if (( crashLine + 100 < $(wc -l < "$checkLog") )); then
+				crashLine=
+			fi
+		fi
 		if [ -n "$crashLine" ]; then
-			local startLine=$(( crashLine > 1 ? crashLine - 1 : 1 ))
+			# start at the first match within 20 lines before the last one, so the exception type
+			# and message (terminate called, what():) show together with the backtrace header
+			for firstCrashLine in "${crashLines[@]}"; do
+				(( firstCrashLine >= crashLine - 20 )) && break
+			done
+			local startLine=$(( firstCrashLine > 1 ? firstCrashLine - 1 : 1 ))
 			local endLine=$(( crashLine + 4 ))
 			out "Crash context from ${checkLog} (lines ${startLine}-${endLine}):"
 			sed -n "${startLine},${endLine}p" "$checkLog" | sed 's/^/    /'
@@ -817,6 +846,53 @@ function reportExitedProcess
 	return 0
 }
 export -f reportExitedProcess
+
+#############################
+# Report the contexts of a launch that stopped running soon after it.
+# A context can pass the launch checks (alive file written, http port answering)
+# and still exit seconds later, for example on an exception thrown in a thread it
+# started at construction; the terminal would then show only the successful launch.
+# Run it in the background, like printMainURL, so the terminal comes back right away:
+#	reportContextsExitedAfterLaunch <pid> <label> <log file> [<pid> <label> <log file> ...] &
+# Contexts that are not running when it starts were already reported by the launch
+# checks and are skipped. After OTS_LATE_EXIT_CHECK_SECONDS (default 30; 0 turns the
+# check off) every remaining context that is no longer running is reported with the
+# error from its log, unless ots killed it on purpose (ots -k, a relaunch, Shutdown:
+# killproc lists those in OTSDAQ_STARTOTS_KILLED_PIDS_FILE). Prints nothing when all
+# contexts are still running.
+function reportContextsExitedAfterLaunch
+{
+	local waitSeconds=${OTS_LATE_EXIT_CHECK_SECONDS:-30}
+	[ "$waitSeconds" == 0 ] && return 0
+
+	local pids=() labels=() logs=()
+	while [ $# -ge 3 ]; do
+		if [ -n "$1" ] && kill -0 $1 >/dev/null 2>&1; then
+			pids+=("$1")
+			labels+=("$2")
+			logs+=("$3")
+		fi
+		shift 3
+	done
+	[ ${#pids[@]} -eq 0 ] && return 0
+
+	sleep ${waitSeconds}
+
+	local k
+	local reported=0
+	for k in "${!pids[@]}"; do
+		kill -0 ${pids[$k]} >/dev/null 2>&1 && continue #still running
+		grep -qx "${pids[$k]}" "${OTSDAQ_STARTOTS_KILLED_PIDS_FILE}" 2>/dev/null && continue #killed on purpose by ots
+		echo
+		reportExitedProcess ${pids[$k]} "${logs[$k]}" "${labels[$k]}" "is no longer alive: it exited within ${waitSeconds} s after launch."
+		reported=1
+	done
+	if [ $reported == 1 ]; then
+		warning "ots is no longer fully running on ${THIS_HOST}. Fix the error above (e.g. revert Data/ServiceData/ActiveTableGroups.cfg to the last working group) and relaunch."
+	fi
+	return 0
+}
+export -f reportContextsExitedAfterLaunch
 
 #############################
 # Wait for a context's http port to answer after its is-alive file appeared.
@@ -969,6 +1045,7 @@ function killprocs
 		unset ContextPIDArray #done with array of PIDs, so clear
 		unset ContextPIDNameArray #done with array of PIDs, so clear
 		unset ContextPIDIsAliveArray #done with array of PIDs, so clear
+		unset ContextPIDLogArray #done with array of PIDs, so clear
 
 		if [[ $1 == "ownedProcesses" && -v GATEWAY_PID ]]; then #in this case if variable is set, kill gateway too
 			out "${Red}${Rev}Killing Gateway process ID ${GATEWAY_PID}${RstClr}"
@@ -1388,6 +1465,7 @@ launchOTSMacromaker() {
 	unset ContextPIDArray #reset
 	unset ContextPIDNameArray #reset
 	unset ContextPIDIsAliveArray #reset
+	unset ContextPIDLogArray #reset
 
 	export MACROMAKER_MODE=1
 	#parameters are shifted during initial parsing, so the filename input should always be at $1
@@ -1608,6 +1686,12 @@ launchOTSMacromaker() {
 	ContextPIDArray+=($LAST_OTS_PID)
 	ContextPIDNameArray+=("MacroMakerMode")
 	ContextPIDIsAliveArray+=(1)
+	ContextPIDLogArray+=("${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt")
+
+	#report the context if it exits soon after launch (not for a remote launch: it would hold the ssh session open)
+	if [ $ISREMOTE == 0 ]; then
+		reportContextsExitedAfterLaunch ${LAST_OTS_PID} "MacroMaker" "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt" &
+	fi
 
 } #end launchOTSMacromaker
 export -f launchOTSMacromaker
@@ -1642,6 +1726,7 @@ launchOTSWiz() {
 	unset ContextPIDArray #reset
 	unset ContextPIDNameArray #reset
 	unset ContextPIDIsAliveArray #reset
+	unset ContextPIDLogArray #reset
 
 	#(re)setup user ssh tunnels in case they have timed out
 	if declare -F otsUserSshTunnels > /dev/null; then
@@ -1917,6 +2002,12 @@ launchOTSWiz() {
 	ContextPIDArray+=($LAST_OTS_PID)
 	ContextPIDNameArray+=("WizMode")
 	ContextPIDIsAliveArray+=(1)
+	ContextPIDLogArray+=("${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt")
+
+	#report the context if it exits soon after launch (not for a remote launch: it would hold the ssh session open)
+	if [ $ISREMOTE == 0 ]; then
+		reportContextsExitedAfterLaunch ${LAST_OTS_PID} "Wizard" "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt" &
+	fi
 
 } #end launchOTSWiz
 export -f launchOTSWiz
@@ -2125,6 +2216,7 @@ launchOTS() {
 	unset ContextPIDArray #reset
 	unset ContextPIDNameArray #reset
 	unset ContextPIDIsAliveArray #reset
+	unset ContextPIDLogArray #reset
 
 
 	#(re)setup user ssh tunnels in case they have timed out
@@ -2534,6 +2626,7 @@ launchOTS() {
 		ContextPIDArray+=($LAST_OTS_PID)
 		ContextPIDNameArray+=(${xdaqContextUID[$i]})
 		ContextPIDIsAliveArray+=(1)
+		ContextPIDLogArray+=("${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt")
 
 		i=$(( $i + 1 ))
 	done
@@ -2558,6 +2651,7 @@ launchOTS() {
 		unset ContextPIDArray #reset
 		unset ContextPIDNameArray #reset
 		unset ContextPIDIsAliveArray #reset
+		unset ContextPIDLogArray #reset
 		i=0
 		j=0
 		for PORT in "${xdaqPort[@]}"
@@ -2728,6 +2822,7 @@ launchOTS() {
 			ContextPIDArray+=($LAST_OTS_PID)
 			ContextPIDNameArray+=(${xdaqContextUID[$i]})
 			ContextPIDIsAliveArray+=(1)
+			ContextPIDLogArray+=("${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt")
 			#ContextPIDArray+=(${TempContextPIDArray[$j]})
 
 
@@ -2836,6 +2931,19 @@ launchOTS() {
 	elif [[ $ISGATEWAYLAUNCH == 1 ]]; then
 		printMainURL &
 		PRINT_MAIN_URL_PID=$!
+	fi
+
+	#report contexts that exit soon after launch (not for a remote launch: it would hold the ssh session open)
+	if [ $ISREMOTE == 0 ]; then
+		lateCheckArgs=()
+		if [[ $ISGATEWAYLAUNCH == 1 && -v GATEWAY_PID ]]; then
+			lateCheckArgs+=("${GATEWAY_PID}" "Gateway" "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}")
+		fi
+		for lateCheckIndex in "${!ContextPIDArray[@]}"; do
+			lateCheckArgs+=("${ContextPIDArray[$lateCheckIndex]}" "Non-gateway ${ContextPIDNameArray[$lateCheckIndex]}" "${ContextPIDLogArray[$lateCheckIndex]}")
+		done
+		reportContextsExitedAfterLaunch "${lateCheckArgs[@]}" &
+		unset lateCheckArgs lateCheckIndex
 	fi
 
 
