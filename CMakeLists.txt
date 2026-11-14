@@ -44,6 +44,9 @@ cet_set_compiler_flags(
  NO_UNDEFINED
  EXTRA_FLAGS -pedantic -D_LIBCPP_ENABLE_CXX17_REMOVED_FEATURES=1 ${DT_FLAG}
  )
+if(APPLE) # Apple clang warns where gcc does not (deprecated sprintf, ...): keep -Werror on Linux, warn on macOS
+	add_compile_options(-Wno-error)
+endif()
 
 # Debug streamer.
 string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC)
@@ -94,6 +97,9 @@ elseif(DEFINED ENV{OTS_LITE})
 	find_package(TRACE REQUIRED EXPORT)
 	find_package(Boost QUIET COMPONENTS filesystem REQUIRED EXPORT)
 	find_package(artdaq-database 3.04.00 REQUIRED)
+	if(APPLE) # on macOS cetlib uses CommonCrypto, so libcrypto (SHA-512 in WebUsers) is not transitive
+		find_package(OpenSSL REQUIRED COMPONENTS Crypto EXPORT)
+	endif()
 else()
 	find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
 	find_package(artdaq 3.12.00 REQUIRED EXPORT)

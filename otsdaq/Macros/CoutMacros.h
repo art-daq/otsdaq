@@ -9,6 +9,13 @@
 #include <iostream>  //for cout
 #include <sstream>   //for stringstream, std::stringbuf
 
+#ifdef __APPLE__
+// macOS has no gettid(); used in supervisor log lines. Use the kernel thread id instead.
+#include <pthread.h>
+#include <sys/types.h>
+inline pid_t gettid(void) { uint64_t tid = 0; pthread_threadid_np(nullptr, &tid); return static_cast<pid_t>(tid); }
+#endif
+
 #ifdef OTS_MAXLITE
 // ots maxlite: no TRACE; TLOG/TTEST/TLVL_* write to std::cout (see OtsLog.h)
 #include <stdexcept>
