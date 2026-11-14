@@ -26,6 +26,7 @@
 #include "xgi/Input.h"
 #include "xgi/Output.h"
 
+#include <algorithm>  // std::stable_partition (Console Supervisor constructed first)
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/parsers/XercesDOMParser.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
