@@ -159,7 +159,9 @@ NEW_VERSION=$(echo "$SAVE_RESULT" | grep -oP "savedVersion value='\K[^']+")
 echo "New version: $NEW_VERSION"
 
 # Verify all three cells before building a group
-VERIFY=$(cfg_ro getSpecificTable tableName="$TABLE" version="$NEW_VERSION")
+# cells in the reply are URL-encoded (127.0.0.1 arrives as 127%2E0%2E0%2E1): decode before comparing
+VERIFY=$(cfg_ro getSpecificTable tableName="$TABLE" version="$NEW_VERSION" \
+    | python3 -c 'import sys, urllib.parse; sys.stdout.write(urllib.parse.unquote(sys.stdin.read()))')
 for want in "$STATE_IP" "$STATE_PORT"; do
     if ! echo "$VERIFY" | grep -q "$want"; then
         echo "ERROR: version $NEW_VERSION of $TABLE does not contain '$want'; not building a group."
