@@ -9,6 +9,7 @@ read its header) for usage.
 |--------|-------|------|
 | [check_ots_status.sh](check_ots_status.sh) | `setup_ots.sh` | quick health check: processes, UDP ports, logs, TRACE, UDP remote controls |
 | [gateway_udp_cmd.sh](gateway_udp_cmd.sh) | Gateway UDP enabled (`gateway-udp-fsm.md`) | send a Gateway UDP message (FSM command or query) and poll the Gateway status until a target state or failure |
+| [emulator_sine_sweep.sh](emulator_sine_sweep.sh) | MacroMaker UDP, system Configured (Running to see it) | stream N channels of 16-bit sine waves from the emulator and sweep the amplitude for S seconds; the "two channels, amplitude varying slowly" request from the AI tutorial as a script that costs no tokens |
 | [read_emulator_registers.sh](read_emulator_registers.sh) | MacroMaker UDP, system Configured | read the emulator's data-config registers |
 | [cfg_udp_browse_tree.sh](cfg_udp_browse_tree.sh) | ConfigGUI UDP | read-only tree browse of the active Context group |
 | [cfg_udp_edit_field.sh](cfg_udp_edit_field.sh) | ConfigGUI UDP, Kerberos | edit one field, save a new group and activate it |
