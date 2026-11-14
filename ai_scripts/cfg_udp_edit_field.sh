@@ -161,7 +161,7 @@ if echo "$GROUP_RESULT" | grep -q "<Error"; then
     exit 1
 fi
 
-NEW_KEY=$(echo "$GROUP_RESULT" | grep -oP "TableGroupKey value='\K[^']+" || true)
+NEW_KEY=$(echo "$GROUP_RESULT" | grep -oP "<TableGroupKey value='\K[^']+" || true)
 [ -n "$NEW_KEY" ] || { echo "ERROR: no group key in the saveNewTableGroup reply."; exit 1; }
 echo "New group: $GROUP_NAME key $NEW_KEY"
 

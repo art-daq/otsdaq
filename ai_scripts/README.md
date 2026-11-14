@@ -12,7 +12,8 @@ read its header) for usage.
 | [emulator_sine_sweep.sh](emulator_sine_sweep.sh) | MacroMaker UDP, system Configured (Running to see it) | stream N channels of 16-bit sine waves from the emulator and sweep the amplitude for S seconds; the "two channels, amplitude varying slowly" request from the AI tutorial as a script that costs no tokens |
 | [read_emulator_registers.sh](read_emulator_registers.sh) | MacroMaker UDP, system Configured | read the emulator's data-config registers |
 | [cfg_udp_browse_tree.sh](cfg_udp_browse_tree.sh) | ConfigGUI UDP | read-only tree browse of the active Context group |
-| [cfg_udp_edit_field.sh](cfg_udp_edit_field.sh) | ConfigGUI UDP, Kerberos | edit one field, save a new group and activate it |
+| [cfg_udp_edit_field.sh](cfg_udp_edit_field.sh) | ConfigGUI UDP, Kerberos | edit one field, save the table version and a new group key, and activate it (it does not move the alias: run `cfg_udp_set_alias.sh` next) |
+| [cfg_udp_set_alias.sh](cfg_udp_set_alias.sh) | ConfigGUI UDP, Kerberos | point a group alias (e.g. `defaultSystemAlias`) at a group key: new GroupAliasesTable version, new active Backbone key. The last step after `cfg_udp_edit_field.sh`; Configure resolves the alias through the active Backbone |
 | [enable_gateway_udp_transitions.sh](enable_gateway_udp_transitions.sh) | ConfigGUI UDP, Kerberos | enable Gateway UDP state changes and application status monitoring (IP, port and flags together) |
 | [add_desktop_icon.sh](add_desktop_icon.sh) | ConfigGUI UDP, Kerberos | adds a Desktop icon (presets `appstatus`, `subsystemlaunch`) to the active Context group; `-n` dry run, `-w` accept tree warnings |
 | [cfg_udp_edit_group.sh](cfg_udp_edit_group.sh) | ConfigGUI UDP, Kerberos | many edits across a group's tables (cells, links, new rows, row deletes `-T/uid` after `--`, `new:` first table version, `add:` existing table), one new group (optionally a new name), activate; `-n` dry run, `-w` accept tree warnings |

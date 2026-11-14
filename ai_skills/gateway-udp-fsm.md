@@ -189,6 +189,7 @@ Which restart a change needs is in "Applying Active Context changes" below.
   already-running supervisors: Configure keeps using the group loaded at startup
   (the old consumer/plugin error repeats). Restart `ots` after changing any group
   (observed 2026-11-02 with a total restart; see the matrix below for lighter options).
+- (`ai_scripts/cfg_udp_set_alias.sh <alias>` does the two steps below; `configgui-udp.md` has the whole sequence. The Gateway picks up a new Backbone through Halt, Shutdown, Startup, Initialize, with no `ots` restart: verified 2026-11-14.)
 - `Configure,<alias>` resolves the alias through the **active Backbone group**,
   not the latest `GroupAliasesTable`. A new Configuration group is ignored until
   (1) `setGroupAliasInActiveBackbone groupAlias=<alias> groupName=<group> groupKey=<newKey>`

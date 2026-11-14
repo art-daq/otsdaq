@@ -206,7 +206,7 @@ if [ -n "$DUP_KEY" ]; then
     echo "Group is identical to existing $GROUP_NAME key $DUP_KEY; activating that key."
     GROUP_RESULT="<TableGroupKey value='$DUP_KEY'/>"
 fi
-NEW_KEY=$(echo "$GROUP_RESULT" | grep -oP "TableGroupKey value='\K[^']+" || true)
+NEW_KEY=$(echo "$GROUP_RESULT" | grep -oP "<TableGroupKey value='\K[^']+" || true)
 if [ -z "$NEW_KEY" ]; then
     echo "ERROR in saveNewTableGroup: $(echo "$GROUP_RESULT" | grep -oP "Error value='\K[^']+" | head -1)"
     exit 1
