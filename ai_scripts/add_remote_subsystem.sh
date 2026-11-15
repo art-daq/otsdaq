@@ -20,7 +20,7 @@
 #
 # Usage:
 #   ./add_remote_subsystem.sh [-n] <uid> <userDataPath> <ip>:<gatewayUdpPort> [setupType] [fullName] [landingPage] [folder]
-#     -n           dry run (temporary edits only; a missing table is reported, not created)
+#     -n           dry run (temporary edits only; a missing table definition is reported, nothing is copied)
 #     uid          letters/digits/_ (e.g. sunrock); icon caption is fullName (default uid)
 #     userDataPath user@host:/abs/Data_<sub> (needed for RELAUNCH from Subsystem Launch: the top's ots
 #                  script runs `ssh -K <user>@<host> ots_remote_instance_start ...`, also for the
@@ -55,6 +55,9 @@ INFO="$USER_DATA/TableInfo/SubsystemUserDataPathsTableInfo.xml"
 if [ ! -f "$INFO" ]; then
     SRC="${OTS_SOURCE:-$HERE/../..}/otsdaq/data-core/TableInfo/ContextGroup/SubsystemUserDataPathsTableInfo.xml"
     [ -f "$SRC" ] || { echo "ERROR: $INFO missing and $SRC not found."; exit 1; }
+    if [ -n "$DRY" ]; then
+        echo "Dry run: $INFO is missing; a real run copies $SRC there, then asks for a restart. Nothing written."; exit 1
+    fi
     cp "$SRC" "$INFO"
     echo "Copied SubsystemUserDataPathsTableInfo.xml into $USER_DATA/TableInfo."
     echo "Restart this ots instance (table definitions load at startup), then rerun."; exit 1
