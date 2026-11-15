@@ -98,6 +98,10 @@ EDIT_RESULT=$(cfg saveTreeNodeEdit \
     targetUID="$UID_NAME" targetColumn="$COLUMN" \
     newValue="$ENCODED_VALUE" editNodeType=value)
 
+if echo "$EDIT_RESULT" | grep -q "is the same as the current value"; then
+    echo "$TABLE.$UID_NAME.$COLUMN is already '$NEW_VALUE' in $GROUP_NAME key $GROUP_KEY. Nothing to change."
+    exit 0
+fi
 if echo "$EDIT_RESULT" | grep -q "<Error"; then
     echo "ERROR in saveTreeNodeEdit:"
     echo "$EDIT_RESULT" | grep -oP "Error value='\K[^']+"
