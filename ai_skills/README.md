@@ -26,6 +26,7 @@ Knowledge about maintaining the project itself (README, documentation publishing
 | [sunrock-fe-context.md](sunrock-fe-context.md) | the Sunrock placeholder FE (repo `otsdaq-td-ims-asic`) in its own context and FE Supervisor: config rows, install steps, checks |
 | [ots-subsystems.md](ots-subsystems.md) | run a top-level ots and its satellite subsystems (Remote Gateways) from one lite area: `source setup_ots.sh <name>`, `Data_<name>`, shared database, the icon + `SubsystemUserDataPathsTable` pair, Subsystem Launch page, `RemoteSubsystems.txt`, per-instance ports, recipe, log checks, pitfalls |
 | [console-without-browser.md](console-without-browser.md) | read Console messages as an agent: no UDP remote control exists, use the Gateway/context logs, `gateway_log_events.sh`, app status |
+| [security-and-users.md](security-and-users.md) | web security: `NoSecurity` vs `DigestAccessAuthentication`, accounts and permission levels (0/1/10/100/255 per group), per-supervisor thresholds (`UserPermissionsThreshold`, lock, security-required requests), the user lock, the Wiz mode access code (length, 8+ for write access), IP lists; and that the UDP remote controls have no login |
 | [trace-and-logging.md](trace-and-logging.md) | use TRACE and MessageFacility; where logs go in lite |
 
 ## Keeping this index current

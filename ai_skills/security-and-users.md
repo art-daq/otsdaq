@@ -23,8 +23,8 @@ in the agent's first message (`agent-first-message.md`). Everything below govern
 | `NoSecurity` (default; also when the file is missing or unreadable) | no login: every browser user is the account `admin`; cookie codes are not checked. *Seen:* log line "The current security type is NoSecurity" |
 | `DigestAccessAuthentication` | accounts with passwords (salted SHA-512), cookie codes on every request, login failure counting |
 
-With NoSecurity, requests that require security (below) are refused, and Configuration edits are not allowed
-for `admin`. Switching the mode is a Wiz mode action in the browser; the file is plain text, so an agent could write
+With NoSecurity, requests listed as requiring security (below) are refused in normal mode (everyone is `admin`).
+Switching the mode is a Wiz mode action in the browser; the file is plain text, so an agent could write
 it, but the effect after a restart was **not tested here**: do not switch a shared installation.
 
 ## Accounts and permission levels
@@ -39,7 +39,7 @@ A user has a permission level **per group**: `<group>:<level>` pairs, always inc
 | Level | Meaning |
 |---|---|
 | 0 | inactive: can not log in (also the state after too many failed logins) |
-| 1 | novice | 
+| 1 | novice |
 | 10 | user (experienced: edits the configuration) |
 | 100 | expert |
 | 255 | admin of the group |
@@ -76,9 +76,11 @@ accountability of edits.
 
 ## The user lock
 
-One user at a time holds the lock for lock-protected requests (e.g. Configuration edits); a released lock goes back
-to `admin` or the previous holder; 30 minutes of inactivity release it. *Seen:* `ServiceData/LoginData/user_with_lock.dat`
-holds `admin` on the test install. A request needing the lock from another user fails until the holder releases it.
+One user at a time holds the lock for lock-protected requests (e.g. Configuration edits). A user takes it for
+themselves (an admin may take it for another user); only the holder can release it, which leaves it unheld; 30
+minutes of inactivity release it automatically. The holder is saved in `ServiceData/LoginData/user_with_lock.dat`
+(no file: `admin`); *seen:* `admin` on the test install. A request needing the lock from another user fails until
+the holder releases it.
 
 ## Wiz mode access code
 
@@ -94,9 +96,10 @@ Anyone with the URL has admin rights in Wiz mode: do not expose the Wiz port.
 
 ## IP lists and the network
 
-`$USER_DATA/ServiceData/LoginData/ip_accept.dat` (never blocked: wildcard patterns, one per line), `ip_reject.dat`
-(always refused) and the generated `ip_generated_blacklist.dat` (after repeated failures) apply to the web server.
-Accept lists are checked first. Beyond that otsdaq expects to sit behind your network's access control or a
+`$USER_DATA/ServiceData/LoginData/ip_accept.dat` (wildcard patterns, one per line: accepted at once), `ip_reject.dat`
+(refused) and the generated `ip_generated_blacklist.dat` (after repeated failures) apply to the web server.
+Checked in that order: accept, reject, blacklist; an IP in none is accepted; the files are re-read every 10 minutes.
+Beyond that otsdaq expects to sit behind your network's access control or a
 reverse proxy that does the TLS; the web server itself speaks plain HTTP. The README mentions CILogon certificate
 access for accounts; its set-up is not covered here and was not checked.
 
