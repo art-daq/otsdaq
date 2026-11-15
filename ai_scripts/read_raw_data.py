@@ -24,21 +24,23 @@ import sys
 
 
 def find_packet_length(b, prefix):
-    """smallest L such that every L-byte step lands on a header with type 1-3 and sequence +1"""
+    """smallest L such that every L-byte step lands on a header with type 1-3 and sequence +1; the last packet
+    of a file may be shorter than L (the "last of the burst" packet carries what was left)"""
     step0 = 1 if prefix else 0
     for L in range(3, min(len(b), 70000) + 1):
         stride = L + step0
-        if len(b) % stride:
-            continue
         ok = True
         prev = None
         for off in range(0, len(b), stride):
+            if off + step0 + 1 >= len(b):  # a final fragment too short to hold a header
+                ok = False
+                break
             t, s = b[off + step0], b[off + step0 + 1]
             if t not in (1, 2, 3) or (prev is not None and s != (prev + 1) % 256):
                 ok = False
                 break
             prev = s
-        if ok:
+        if ok and len(b) - ((len(b) - 1) // stride) * stride >= 2 + step0:
             return L
     return None
 
@@ -59,16 +61,34 @@ def main():
         print("Empty file: no packet was saved (was the run started with the emulator streaming?).")
         return 0
     L = find_packet_length(b, a.ots_saver)
+    lead = 0
+    if L is None:
+        # the file may begin with a leftover packet of the previous burst (the "last" packet, any size): look for
+        # the uniform stream after it, at least 3 packets long
+        for lead in range(1, min(len(b), 4000)):
+            if b[lead] in (1, 2, 3):
+                L2 = find_packet_length(b[lead:], a.ots_saver)
+                if L2 is not None and len(b) - lead >= 3 * (L2 + (1 if a.ots_saver else 0)):
+                    L = L2
+                    break
+        if L is None:
+            lead = 0
+        else:
+            print("Skipped %d leading byte(s): a leftover packet of the previous burst (type %d)." % (lead, b[0]))
+            b = b[lead:]
     if L is None:
         print("Cannot find a packet length: not an emulator raw file, or packets of different sizes"
               " (try --ots-saver for files of the OtsDataSaverConsumer).")
         return 1
     stride = L + (1 if a.ots_saver else 0)
     packets = [b[o + stride - L:o + stride] for o in range(0, len(b), stride)]
+    short = len(packets[-1]) < L
     types = [p[0] for p in packets]
     seqs = [p[1] for p in packets]
     print("Packets: %d of %d bytes (payload %d); first %d, middle %d, last %d; sequence %d..%d"
           % (len(packets), L, L - 2, types.count(1), types.count(2), types.count(3), seqs[0], seqs[-1]))
+    if short:
+        print("The last packet is shorter (%d bytes): the end of the burst." % len(packets[-1]))
     gaps = sum(1 for x, y in zip(seqs, seqs[1:]) if y != (x + 1) % 256)
     if gaps:
         print("Sequence gaps: %d (lost packets)" % gaps)
@@ -94,7 +114,7 @@ def main():
     chans = [[] for _ in range(a.channels)]
     for p in packets:
         pay = p[2:]
-        for off in range(0, len(pay), group):
+        for off in range(0, len(pay) - group + 1, group):  # whole samples only (the last packet may be short)
             for ch in range(a.channels):
                 chans[ch].append(struct.unpack_from(fmt, pay, off + ch * bps)[0])
     full = (1 << a.bits) - 1
