@@ -49,6 +49,14 @@ ots_mm_udp_test 127.0.0.1 2011 "MySequence"
 ots_mm_udp_test 127.0.0.1 2011 "MySequence" 1 [num_of_packets,200]
 ```
 
+Write a sequence without the browser: `ai_scripts/mm_make_mom.py` (file format: one JSON object per
+step, `macroType` `fe`, `__delay__` or `__mom__`; inputs `name,value;name,value` URI-encoded; variables
+under `__variables__` as `$name: {value, step, max}`). Verified 2026-11-14 on ots maxlite: an FE
+macro with a `$amp` variable, a delay and a Sunrock status read ran over UDP. **Known bug:** an FE macro
+input whose *name* has spaces or symbols (e.g. `Pause Slow Controls (Default = false)`) fails when the
+sequence runs over UDP: the runner sends the name URI-encoded and the FE compares it unencoded
+(`FEVInterfacesManager.cc` "mismatch in a name of an input argument").
+
 ## UDP Protocol (Server Side)
 
 The UDP handler is in `MacroMakerSupervisor::RemoteControlWorkLoop()`.
