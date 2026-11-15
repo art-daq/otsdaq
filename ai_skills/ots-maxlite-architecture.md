@@ -34,28 +34,37 @@ source setup_ots.sh
   older than 3.29;
 - builds cetmodules (CMake functions only) and the otsdaq repos; no cet libraries, TRACE,
   artdaq-database, ZeroMQ or Catch2;
-- installs the first_demo tutorial `Data/` and its database in `databases/filesystemdb/`
-  (artdaq-database format), and creates an empty text store `databases/textdb/test_db`, which
-  `ARTDAQ_DATABASE_URI` points at (see "Configuration: text store" to fill it).
+- installs the tutorial `Data/` and its databases (default branch `first_demo_waveform_maxlite` of `otsdaq_demo_data`:
+  the artdaq-database format in `databases/filesystemdb/` and the text store `databases/textdb/test_db` that
+  `ARTDAQ_DATABASE_URI` points at), completes the table definitions (see "Fresh install of an agent's own area");
 
-## Fresh install checklist for an agent's own area (verified 2026-11-15, area `dev-skills`)
+## Fresh install of an agent's own area (verified 2026-11-15)
 
-An install from dev-srcs (`ots-quick-maxlite-start.sh --branch feature/ots-maxlite --repo-base <dev-srcs>`, 2 minutes) is
-not runnable until four things are done; each has a script:
-1. **Fill the text store** (it starts empty): `ai_scripts/convert_config_store.sh all filesystemdb://<area>/databases/filesystemdb/test_db textdb://<area>/databases/textdb/test_db`,
-   run from a **clean shell** that sources only a lite install of this branch (`env -i ... source <lite>/setup_ots.sh`). Run from the
-   maxlite shell it fails "needs the artdaq-database plugin, which ots maxlite does not build" because `OTS_MAXLITE` is inherited.
-   Result: 35 table versions, 7 group keys, active groups Context 6, Backbone 4, Configuration 2.
-2. **Own ports** (the tutorial data's emulator and data ports 4000-4101, 30000-30001 clash with any other area): a `setup_area.sh` wrapper
-   for the environment ports, then in Wiz mode `ai_scripts/isolate_ots_ports.py --offset 5000 --apply --accept-warnings`.
-3. **Gateway UDP**: the data has none (`PortForStateChangesOverUDP` 0): `ai_scripts/enable_gateway_udp_transitions.sh 127.0.0.1 <port>`.
-4. **No ROOT consumer**: the Visualizer consumer `DB1Consumer1` is `DemoDQMHistosConsumer`, which maxlite does not build (Configure fails
-   "Failed to instantiate consumer plugin"): `cfg_udp_edit_group.sh -w -t Configuration "DataProcessorTable/DB1Consumer1/ProcessorPluginName=RawDataVisualizerConsumer"`.
-5. **Table definitions**: the tutorial data's `Data/TableInfo` predates some tables (the Iterate group needs `IterationCommandIncludedSubsystemsTable`;
-   without it `iteration_plan.py` can not save a group): `UpdateOTS.sh --tables`.
+```bash
+mkdir <area> && cd <area> && cp <dev-srcs>/otsdaq-demo/tools/ots-quick-maxlite-start.sh .
+./ots-quick-maxlite-start.sh --branch feature/ots-maxlite --repo-base <dev-srcs>        # 2 minutes
+```
+The installer now does by itself what used to be three manual steps:
+- **Text store**: the default tutorial is the branch `first_demo_waveform_maxlite` of `art-daq/otsdaq_demo_data` (option
+  `--tutorial`, source `--tutorial-repo`, which may be a local clone): `first_demo_waveform` plus its database converted to the
+  `textdb://` format (`databases/textdb/test_db`: 35 table versions, 7 group keys, active groups Context 6, Backbone 4, Configuration
+  2). maxlite builds no artdaq-database, so it can not convert; the converted copy ships with the data. A tutorial branch without
+  `databases/textdb` leaves the text store empty (the installer warns; `ai_scripts/convert_config_store.sh`, run from a clean
+  lite shell, fills it).
+- **No ROOT consumer**: `first_demo_waveform` already uses `RawDataVisualizerConsumer` as the Visualizer consumer (the plain
+  `first_demo` has `DemoDQMHistosConsumer`, which maxlite does not build: Configure then fails "Failed to instantiate consumer plugin").
+- **Table definitions**: the installer completes `Data/ServiceData/CoreTableInfoNames.dat` (the list `UpdateOTS.sh --tables` copies from;
+  ots completes it itself at its first start) and runs `UpdateOTS.sh --tables`, so tables newer than the tutorial data (the Iterate
+  group's `IterationCommandIncludedSubsystemsTable`, `SubsystemUserDataPathsTable`) are present.
+
+Two things stay yours, because they depend on the host:
+1. **Own ports**: the tutorial data's emulator and data ports (4000-4101, 30000-30001) clash with any other area. A `setup_area.sh`
+   wrapper for the environment ports, then in Wiz mode `ai_scripts/isolate_ots_ports.py --offset <N> --apply --accept-warnings`.
+2. **Gateway UDP** (the data has it off, `PortForStateChangesOverUDP` 0): `ai_scripts/enable_gateway_udp_transitions.sh 127.0.0.1 <port>`.
 After each Configuration/Context change move the alias (`cfg_udp_set_alias.sh <alias>`) and `apply_config_reload.sh PhysicsRuns0 <alias>`;
-`ai_scripts/emulator_ctl.sh start <emulator port>`. Result: Start, stream, Stop saved a file that `read_raw_data.py` decodes, and
-`isolate_ots_ports.py` reports 0 conflicts. The installer should do steps 1, 4 and 5 itself (open item).
+`ai_scripts/emulator_ctl.sh start <emulator port>`. Verified on two fresh installs with the final installer: 15 Iterate table
+definitions, Wiz mode loads the text store, after the two steps above Configure, a run with the emulator streaming, and
+`read_raw_data.py` decoding the file all work, and `isolate_ots_ports.py` reports 0 conflicts.
 
 ## First run, step by step (verified 2026-11-12)
 
@@ -276,10 +285,9 @@ and `textdb://` keeping version and key numbers. It needs the `Database` plugin,
 an ots lite (or full) installation. Verified 2026-11-12 on the tutorial database: 65 table
 versions and 20 group keys, round trip text -> artdaq-database -> text byte-identical.
 
-The maxlite installer still installs the tutorial database in `databases/filesystemdb/` and
-creates an **empty** `databases/textdb/test_db`; converting it is an open item. Until then,
-convert it once from any lite install of this branch (2026-11-12: 35 table versions, 7 group
-keys, verified):
+The maxlite installer takes the text store ready-made from the tutorial branch `first_demo_waveform_maxlite`. For another
+tutorial branch (artdaq-database format only) the text store is empty: convert it once from any lite install of this branch
+(2026-11-12: 35 table versions, 7 group keys, verified):
 
 ```
 cd <lite area> && source setup_ots.sh
@@ -293,7 +301,7 @@ Do not use `reset_ots_tutorial.sh` in maxlite: its `get_tutorial_data.sh` accept
 
 ## Open items
 
-- Tutorial database for maxlite (convert once and ship a text copy, or convert during install).
+- Done 2026-11-15: the tutorial database ships as a text copy (branch `first_demo_waveform_maxlite`). Open: other tutorial branches (iterator, slow_controls, ...) have no text copy.
 - Run the ARM builds on a board (copy `local/install`, `Data`, the text store and the
   `otsdaq-utilities/WebGUI` web files; a packaging script is planned), measure footprint/RAM.
 - ots lite from this branch: builds (2026-11-12); not yet run in Wiz/normal mode. Full (Spack)
