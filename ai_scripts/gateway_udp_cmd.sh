@@ -68,6 +68,15 @@ case "$MSG" in
        fi ;;
 esac
 
+# lines in the Gateway log before sending: rejections are only reported there
+GWLOG=$(ls -t "$USER_DATA"/Logs/otsdaq_quiet_run-gateway-*.txt 2>/dev/null | head -1)
+LOG0=0; [ -f "$GWLOG" ] && LOG0=$(wc -l < "$GWLOG")
+log_errors() {  # error lines the Gateway logged since the command was sent
+    [ -f "$GWLOG" ] || return
+    tail -n +"$((LOG0 + 1))" "$GWLOG" | LC_ALL=C grep -a -E "Error - |UDP State Changer failed|Failure performing transition" |
+        sed -e 's/\x1b\[[0-9;]*[A-Za-z]//g' | head -3 | cut -c1-300
+}
+
 REPLY=$(send "$MSG" 3)
 [ -n "$REPLY" ] && echo "$REPLY"
 
@@ -84,10 +93,18 @@ while [ $SECONDS -lt $END ]; do
     case "$ST" in
         Failed:::*)
             [ "$ST" = "$PRE" ] && echo "(note: identical to the status before sending; may be left over from an earlier attempt)"
-            echo "FAILED: $ST"; exit 1 ;;
-        "$EXPECT") echo "Reached $EXPECT"; exit 0 ;;
+            echo "FAILED: $ST"; ERRS=$(log_errors); [ -n "$ERRS" ] && { echo "Gateway log says:"; echo "$ERRS"; }; exit 1 ;;
+        "$EXPECT")
+            # was it our command? Without a new "Received a remote FSM Command" line since sending,
+            # another client (e.g. an Iterator plan) moved the Gateway
+            if [ -f "$GWLOG" ] && ! tail -n +"$((LOG0 + 1))" "$GWLOG" | LC_ALL=C grep -a -q "Received a remote FSM Command"; then
+                echo "WARNING: reached $EXPECT, but the Gateway log shows no remote command received since sending: the command may have been rejected and someone else moved the state."
+                exit 4
+            fi
+            echo "Reached $EXPECT"; exit 0 ;;
     esac
     echo "  status: ${ST:0:120}"
 done
 echo "Timed out after ${TMO}s waiting for $EXPECT"
+ERRS=$(log_errors); [ -n "$ERRS" ] && { echo "Gateway log says:"; echo "$ERRS"; }
 exit 2
