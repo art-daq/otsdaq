@@ -54,6 +54,16 @@ void RawDataSaverConsumerBase::startProcessingData(std::string runNumber)
 }
 
 //==============================================================================
+/// pauseProcessingData
+///	Stop reading, but keep the run's file open: DataProcessor::pauseProcessingData() would call
+///	stopProcessingData(), which closes the file, and a resume (startProcessingData with an empty
+///	run number) does not reopen it, so everything after a Resume would be lost.
+void RawDataSaverConsumerBase::pauseProcessingData(void)
+{
+	DataConsumer::stopProcessingData();
+}
+
+//==============================================================================
 void RawDataSaverConsumerBase::stopProcessingData(void)
 {
 	DataConsumer::stopProcessingData();

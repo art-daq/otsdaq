@@ -45,8 +45,8 @@ found"), or swap its plugin to `RawDataVisualizerConsumer` (`tutorial-to-visuali
 
 - `RawDataSaverConsumerTable`: `FilePath` (tutorial data: `${OTSDAQ_DATA}`, set by `setup_ots.sh`, e.g.
   `$USER_DATA/OutputData`), `RadixFileName` (`Run`), `MaxFileSize` (0 = one file per run; otherwise the
-  file name gets a sub-run number `_<n>` and a new file starts when the file reaches `MaxFileSize`/1000
-  bytes, as `RawDataSaverConsumerBase::save` computes it).
+  file name gets a sub-run number `_<n>` and a new file starts at about `MaxFileSize` kilobytes: the constructor
+  multiplies the value by 1,000,000 and `RawDataSaverConsumerBase::save` compares the file size in bytes with a thousandth of that)
 - File name: `<FilePath>/<Radix>_Run<run number>[_<subrun>]_Raw.dat`, opened at Start, closed at Stop.
   The content is the raw UDP packets back to back (`read_raw_data.py` decodes it). A file of 0 bytes
   means no packet reached the buffer during the run (emulator not streaming, wrong port, listener Off).
@@ -64,3 +64,5 @@ Verified 2026-11-14 on ots maxlite (tutorial data imported from lite): the table
 above are read from the active Configuration group (`defaultConfig` key 4); run files `Run_Run7..9_Raw.dat`
 in `OutputData` and `PhysicsRuns0NextRunNumber.txt` exist. File naming and sub-runs are from
 `RawDataSaverConsumerBase.cc`. Not re-checked: a full-build `DQMHistosConsumer` (ROOT), sub-run splitting.
+
+Writing and configuring the processors themselves (producers, consumers, buffer behaviour): `data-processor-plugins.md`.
