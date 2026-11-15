@@ -57,6 +57,8 @@ input whose *name* has spaces or symbols (e.g. `Pause Slow Controls (Default = f
 sequence runs over UDP: the runner sends the name URI-encoded and the FE compares it unencoded
 (`FEVInterfacesManager.cc` "mismatch in a name of an input argument").
 
+For running public/private Macro Maker macros, creating them, and writing FE macros in C++, see `fe-macros-and-macromaker.md` and `ai_scripts/mm_macro.py`.
+
 ## UDP Protocol (Server Side)
 
 The UDP handler is in `MacroMakerSupervisor::RemoteControlWorkLoop()`.

@@ -70,8 +70,8 @@ configuration: `show` after a change, and play once.
 
 A 7-step plan with an FE macro loop, a modify step and a 3-pass label loop was created, shown, edited (set, add,
 move, disable, remove, enable) with consistent rows, and played after a restart: the pass count, the macro step and
-the modify step ran and the plan ended with no error. A macro that needs inputs the step did not give (`varTest`
-needs `Plotly_Plot`) fails with the front end's message in `error_message`.
+the modify step ran and the plan ended with no error. `varTest` as an Iterator step failed with the front end's message "Requested argument not found with name 'Plotly_Plot'" in `error_message`
+(a direct run of it works); the input-free `test` macro ran fine.
 Found in the source and fixed in `Iterator.cc` (needs a rebuild, not run): an integer `FieldIterationStepSize` was
 read from the start-value string, so integer modify steps used the start value as the step.
 Not tested: `track`, `mm-macro`, remote subsystems, `out=` files.
