@@ -17,6 +17,7 @@ Knowledge about maintaining the project itself (README, documentation publishing
 | [development-workflow.md](development-workflow.md) | follow the edit/commit/build/test cycle and the rules for AI agents; helper-script pitfalls |
 | [configgui-udp.md](configgui-udp.md) | change configuration remotely, without DB access: read tables/tree, edit values, links and rows, create a table's first version, new groups, activate, Backbone aliases, Desktop icons |
 | [gateway-udp-fsm.md](gateway-udp-fsm.md) | drive the Gateway state machine (Configure/Start/Halt/Shutdown/Startup) and read status/icons over UDP with `ots_drive_udp_test`; enabling it; alias/Backbone pitfalls; **which restart a Context change needs** (total restart vs Shutdown/Startup vs App Status relaunch) and what each renews |
+| [app-status-monitoring.md](app-status-monitoring.md) | understand `EnableApplicationStatusMonitoring`: `Not Monitored`, the two status threads, how a dead app makes the Gateway `Failed` (not during Shutdown/Startup), disk-space alarms, the status fields |
 | [macromaker-udp.md](macromaker-udp.md) | run FE macros and universal register read/write through MacroMaker UDP |
 | [emulator-registers.md](emulator-registers.md) | program `ots_udp_hw_emulator`: register map, data modes (counter/sine/multi-channel/sawtooth), the stream path to the Visualizer |
 | [tutorial-to-visualizer-waveforms.md](tutorial-to-visualizer-waveforms.md) | go from the first demo tutorial to live waveforms in the Visualizer window |
