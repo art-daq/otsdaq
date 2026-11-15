@@ -139,6 +139,7 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_ 				= {
 																						"IterationCommandConfigureGroupTable",
 																						"IterationCommandExecuteFEMacroTable",
 																						"IterationCommandExecuteMacroTable",
+																						"IterationCommandIncludedSubsystemsTable",
 																						"IterationCommandMacroDimensionalLoopTable",
 																						"IterationCommandMacroDimensionalLoopParameterTable",
 																						"IterationCommandModifyGroupTable",
