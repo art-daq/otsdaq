@@ -79,6 +79,9 @@ export OTS_KCACHE_USER=$(klist | grep 'Default principal' | cut -d: -f2 | sed 's
 ots_table_upload_csv <Table> <file.csv>     # identical content -> existing version reused
 ```
 
+With ots running, `ai_scripts/cfg_udp_table_csv.py get|put` does the same through the Configuration
+GUI (UDP), so the GUI sees the new version at once.
+
 Works for every store type (it goes through the active plugin). The upload refuses to run without
 `OTS_KCACHE_USER`; the saved AUTHOR is the tool's `export_admin`.
 
