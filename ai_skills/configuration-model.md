@@ -64,7 +64,7 @@ alias still points at the old key and Configure silently loads the old configura
 | Configuration group (through its alias), alias, version alias: a new **Backbone** key | Halt, Shutdown, Startup, Initialize, then Configure (or restart `ots`) | `apply_config_reload.sh <fsm> <alias>` |
 | **Context** group: Gateway settings, permissions, icons, table values of existing apps | Shutdown, Startup (see the matrix in `gateway-udp-fsm.md`, "Applying Active Context changes") | `apply_config_reload.sh <fsm>` |
 | **Context** layout: a new context or app, a changed port or LID | a total restart, and a **second** `ots` launch: the ots script starts contexts from its copy `ots.xml` of the run XML that the Gateway writes (`gateway-udp-fsm.md`; seen in `sunrock-fe-context.md`) | `echo Y \| ots -k; ots`, then once more |
-| Table definition (`TableInfo/*.xml`) | restart of the processes that read it (`ots -k; ots`); old versions load with warnings until saved again | - |
+| Table definition (`TableInfo/*.xml`) | the Configuration GUI re-reads it on a table read with `allowIllegalColumns=1` (no restart); other processes at their start (`ots -k; ots`). Saved versions store columns by **StorageName**: a rename that keeps it changes nothing for them; a changed StorageName needs a repair | `tableinfo.py`, `cfg_udp_repair_table.py` |
 | Iterate group | nothing: the Iterator reads it when a plan is played | - |
 
 ## Who changed it
