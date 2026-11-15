@@ -151,7 +151,7 @@ Iterator and replies with its XML (send with `ots_drive_udp_test <ip> <port> raw
 
 | Command | Parameter |
 |---------|-----------|
-| `iteratePlay` | iteration plan name (an `IterationPlanTable` record) |
+| `iteratePlay` | iteration plan name (a plan of the `IterateTable`; create one with `ai_scripts/iteration_plan.py`, then `apply_config_reload.sh`: the Gateway reads the Iterate group at startup) |
 | `iteratePlayGenerated` | `<fsm>;<alias>;<seconds per run>;<runs>;<keepConfiguration 0/1>;<log entry>` (`;` instead of `,`; log entry URI-encoded twice) |
 | `iteratePause`, `iterateHalt` | none |
 | `getIterationPlanStatus` | none; fields `current_state`, `active_plan`, `active_plan_status`, `current_command_index`/`current_number_of_commands`, `current_command_type`, `current_command_iteration`, `error_message`, `last_finished_plan` |
@@ -302,3 +302,5 @@ Verified in ots maxlite 2026-11-12 (first_demo, one context), all over Gateway U
 `ots_drive_udp_test`: Configure, Start, Pause, Resume, Stop, Start, Stop, Halt, Configure, Halt
 (3 s each), Shutdown (8 s), Startup (15 s), then the full cycle again; Startup with the port changed
 5014 -> 5017 and back moved the listener both ways with the same Gateway process (no restart).
+
+Verified 2026-11-15 on ots maxlite: `iteration_plan.py create TwoRuns "fsm PhysicsRuns0" "configure litedefaultSystemAlias" "label again" "run 5" "repeat again 1"` made the first Iterate group (14 member tables, saved empty where unused), a reload loaded it, and `Iterator,iteratePlay,TwoRuns` ran two 5 s runs and ended with `last_finished_plan` TwoRuns and no error.
