@@ -46,9 +46,11 @@ it. `ai_dev_scripts/tutorial_walkthrough_lite.sh <new scratch dir> [--branch B]`
   `echo Y |`.
 - **Proof:** record the PIDs of every other `xdaq.exe`, `ots_lite_main` and emulator process before,
   and compare after.
-- **Do not run `reset_ots_tutorial.sh` while any other otsdaq runs on the host.** It begins with
-  `ots --killall` (`killall -9 xdaq.exe` for every process of the user, all install areas) and
-  `killall -9 ots_udp_hw_emulator`, so it stops every other otsdaq and emulator of that user.
+- **Do not run `reset_ots_tutorial.sh` while any other otsdaq runs on the host.** It runs
+  `killall -9 ots_udp_hw_emulator`, which stops every emulator of the user, and `ots --killall`
+  (today the same as `ots -k`, this installation only; it was a host-wide kill in older `ots`).
+  Use `../ai_scripts/switch_ots_tutorial.sh --tutorial <name>`: it kills nothing, refuses while
+  the installation runs, and prints the `.bak` copies it kept (verified 2026-11-14 on a scratch lite install).
   The installers already install the first_demo data, so after a fresh install there is nothing
   to reset: start it with `ots --wiz` (activates the groups), then `ots`, then
   `ots_udp_hw_emulator 4000 &`. Found 2026-11-12.

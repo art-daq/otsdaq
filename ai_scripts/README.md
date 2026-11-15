@@ -34,6 +34,7 @@ read its header) for usage.
 | [convert_config_store.sh](convert_config_store.sh) | `setup_ots.sh` of an install with both store plugins (lite/full) | `all`: copy a whole configuration store between `filesystemdb://` and `textdb://` keeping numbers; `active`: export the active groups and aliases of one store + USER_DATA and import them into another (merge, or `--fresh`); `-n` dry run |
 | [maxlite_cross_build.sh](maxlite_cross_build.sh) | podman, network | cross-compile ots maxlite for aarch64 or arm32 in a Debian 12 container (`ots-quick-maxlite-start.sh --arch`), then check the libraries; works with rootless podman without `/etc/subuid` and with SELinux enforcing |
 | [check_maxlite_libraries.sh](check_maxlite_libraries.sh) | readelf | list the shared libraries an ots maxlite install needs and flag ones maxlite must not need (TRACE, messagefacility, cetlib, fhiclcpp, Boost, artdaq, ZeroMQ, CURL, ICU...); works on cross-compiled installs |
+| [switch_ots_tutorial.sh](switch_ots_tutorial.sh) | `setup_ots.sh`, `filesystemdb://` store, network | variant of `otsdaq-demo/tools/reset_ots_tutorial.sh` that kills nothing: refuses while this installation runs, installs `--tutorial <name>` data, prints the `.bak` copies it kept; `--launch` starts ots and the emulator (only if UDP 4000 is free) |
 | [revert_active_table_group.sh](revert_active_table_group.sh) | file access to `Data/ServiceData` | revert an active group key when `ots` cannot start |
 
 Config-changing scripts act as the Kerberos user and never proceed anonymously unless the user
