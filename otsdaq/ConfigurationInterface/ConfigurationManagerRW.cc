@@ -65,7 +65,7 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username)
 				{
 					if(strlen(line) < 1)
 						continue;
-					line[strlen(line) - 1] = '\0';  // remove endline
+					if(line[strlen(line) - 1] == '\n') line[strlen(line) - 1] = '\0';  // remove endline (the last line may have none)
 					if(strcmp(line, ("ContextGroup/" + name).c_str()) == 0)  // is match?
 					{
 						foundVector.back() = true;
@@ -82,7 +82,7 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username)
 				{
 					if(strlen(line) < 1)
 						continue;
-					line[strlen(line) - 1] = '\0';  // remove endline
+					if(line[strlen(line) - 1] == '\n') line[strlen(line) - 1] = '\0';  // remove endline (the last line may have none)
 					if(strcmp(line, ("BackboneGroup/" + name).c_str()) == 0)  // is match?
 					{
 						foundVector.back() = true;
@@ -99,7 +99,7 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username)
 				{
 					if(strlen(line) < 1)
 						continue;
-					line[strlen(line) - 1] = '\0';  // remove endline
+					if(line[strlen(line) - 1] == '\n') line[strlen(line) - 1] = '\0';  // remove endline (the last line may have none)
 					if(strcmp(line, ("IterateGroup/" + name).c_str()) == 0)  // is match?
 					{
 						foundVector.back() = true;
@@ -116,7 +116,7 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username)
 				{
 					if(strlen(line) < 1)
 						continue;
-					line[strlen(line) - 1] = '\0';  // remove endline
+					if(line[strlen(line) - 1] == '\n') line[strlen(line) - 1] = '\0';  // remove endline (the last line may have none)
 					if(strcmp(line,
 					          ("ContextGroup/" +
 					           ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE)
