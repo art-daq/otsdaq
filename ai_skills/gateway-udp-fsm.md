@@ -183,6 +183,7 @@ ran Configure, Start, Stop, Start, Stop in all applications of both contexts and
 ## Config changes and the alias must follow the group
 
 Which restart a change needs is in "Applying Active Context changes" below.
+`ai_scripts/apply_config_reload.sh <fsm> [<alias>]` runs Halt, Shutdown, Startup, Initialize (and Configure) and stops at the first failure; `ai_scripts/gateway_log_events.sh` prints the Gateway log lines of these steps (remote commands, transitions, the Configure group and key, `Error - ` rejections). The model behind aliases and Backbone keys: `configuration-model.md`.
 
 
 - Activating a new Configuration group over ConfigGUI UDP does not reload it in
