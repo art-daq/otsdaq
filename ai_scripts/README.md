@@ -50,7 +50,7 @@ These are the first choice when built; the scripts above do similar jobs without
 |------|----------|------|
 | `ots_drive_udp_test <ip> <port> [...]` | Gateway UDP (address printed by `ots`) | drive the FSM (Configure/Start/Stop/Halt...) and wait for the result; status table; any Gateway query (`raw`) |
 | `ots_mm_udp_test <ip> <port> [...]` | MacroMaker UDP (`$OTS_MACROMAKER_UDP_*`) | list FEs and FE macros, run macros, `r`/`w` registers |
-| `ots_cfg_udp_test [-y] <ip> <port> <RequestType> [...]` | ConfigGUI UDP (`$OTS_CONFIG_UDP_*`) | any ConfigurationGUI request: read and edit tables, groups, aliases |
+| `ots_cfg_udp_test [-y] <ip> <port> <RequestType> [...]` | ConfigGUI UDP (`$OTS_CONFIG_UDP_*`) | any ConfigurationGUI request: read and edit tables, groups, aliases; exit 1 on an error reply, 2 on a harmless one (same value, duplicate key; after `mb` of this change) |
 
 ## Keeping this index current
 
