@@ -191,6 +191,11 @@ class CorePropertySupervisorBase
 	{
 		propertiesAreSetup_ = false;
 	}  // forces reload of properties from configuration
+	void 							reloadSupervisorProperties							(void)
+	{
+		propertiesAreSetup_ = false;
+		checkSupervisorPropertySetup();
+	}  // reloads properties (e.g. request permissions) from the configuration now
 	ConfigurationTree getSupervisorTreeNode(void);
 
 	void 							loadUserSupervisorProperties						(void);

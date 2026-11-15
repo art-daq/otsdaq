@@ -7,7 +7,7 @@ XDAQ, artdaq, ROOT, and other heavy dependencies. The CMake preprocessor
 define `OTS_LITE` gates code at compile time (`#ifdef OTS_LITE` /
 `#ifndef OTS_LITE`).
 
-## Key Repos (all on branch `feature/ots-lite`)
+## Key Repos
 
 | Repo | Role |
 |------|------|
@@ -15,6 +15,25 @@ define `OTS_LITE` gates code at compile time (`#ifdef OTS_LITE` /
 | otsdaq-utilities | WebGUI, MacroMaker, ConfigurationGUI, Visualizer, Console |
 | otsdaq-components | FE interface plugins (FEOtsUDPTemplateInterface, etc.) |
 | otsdaq-demo | Demo config, `ots-quick-lite-start.sh` installer, emulator |
+| otsdaq-td-ims-asic | Project repo for the Sunrock/TD IMS ASIC FE plugin and its `CoreTables/` table definitions (not part of the installer; added by hand, see `sunrock-fe-context.md`) |
+
+## Not built in lite
+
+No artdaq: the artdaq table plugins (`ARTDAQ{BoardReader,DataLogger,Dispatcher,EventBuilder,RoutingManager}Table`)
+and `ARTDAQTableBase` are excluded under `OTS_LITE`, as are the ConfigGUI artdaq node
+requests (`getArtdaqNodes`, `saveArtdaqNodes`, `getArtdaqNodeLayout`, `saveArtdaqNodeLayout`
+reply with an Error). The ARTDAQ supervisors/online monitor were already excluded.
+
+## Multiple contexts
+
+`ots_lite_main` serves one context per process, chosen by its `-h/-p` among all contexts in the
+partition XML, and registers the other contexts' applications as remote; `postSOAP` to a
+remote context is an HTTP POST to `/urn:xdaq-application:lid=<N>` of that process. `ots`
+launches extra local non-gateway contexts itself (`xdaq.exe -h <host> -p <port>`); their logs
+are `Data/Logs/otsdaq_quiet_run-<host>-<port>.txt`. See `sunrock-fe-context.md`.
+Adding or changing a context (or an app, port, LID) needs a total restart: Shutdown/Startup and
+App Status relaunches start contexts from the `ots.xml` snapshot of the last full launch (see
+"Applying Active Context changes" in `gateway-udp-fsm.md`).
 
 ## XdaqLite
 
@@ -36,11 +55,19 @@ never created in lite.
 
 After `source setup_ots.sh`:
 
-| Alias | What it does |
-|-------|-------------|
-| `mb` | Incremental build (cmake --build + --install for each package) |
-| `mz` | Clean build (wipe build dirs, re-cmake, build, install) |
-| `mz_uc` | Ultra clean (also rebuilds dependencies from scratch) |
+These are functions defined in `setup_ots.sh` (the old aliases were replaced). They follow the
+repo list in `build/ots_repos.list`: `otsdaq`, `otsdaq-components`, `otsdaq-utilities`,
+`otsdaq-demo`, then any other `srcs/otsdaq-*/` with a `CMakeLists.txt`.
+
+| Command | What it does |
+|---------|-------------|
+| `mb` | Incremental build of the repo list (cmake --build + --install each; a listed repo with no build yet is configured first) |
+| `mz` | Clean build of the repo list (wipe each build dir, re-cmake, build, install). Does not rescan `srcs/` |
+| `mz_uc` | Ultra clean: copies the installer from `srcs/otsdaq-demo`, wipes `build/` and `local/install`, reruns it (rebuilds dependencies, **re-establishes the repo list from `srcs/`**, builds every repo, **regenerates `setup_ots.sh`**, dropping hand-added exports such as `OTS_*_UDP_*`) |
+
+A repo added to `srcs/` is only built after `mz_uc` (or by hand-editing `build/ots_repos.list`).
+`UpdateOTS.sh --pullall` pulls every git repo in `srcs/` on whatever branch each has checked
+out and never switches branches; switch `srcs/` to a new branch by hand first.
 
 Never use raw cmake commands. Never build in user areas — only edit in `dev-srcs/`.
 

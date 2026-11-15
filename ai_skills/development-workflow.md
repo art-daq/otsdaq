@@ -1,15 +1,17 @@
 # otsdaq Development Workflow
 
+Indexes: `ai_skills/README.md` (skills) and `ai_scripts/README.md` (scripts). Start there.
+
 ## Repository Layout
 
-- `dev-srcs/` — SSH-cloned repos on `feature/ots-lite` branch. All edits go here.
+- `dev-srcs/` — SSH-cloned repos (the otsdaq repos plus `otsdaq-td-ims-asic`). All edits go here. Check each repo's branch (`git branch --show-current`); it changes over time.
 - `srcs/` — Disposable copies used by the build. Populated by `UpdateOTS.sh --pullall`.
 - `ots-lite-test/` — The lite install area (build/, local/install/, Data/, databases/).
 
 ## Edit → Build → Test Cycle
 
 1. **Edit** only in `dev-srcs/<repo>/`
-2. **Commit and push** on `feature/ots-lite`
+2. **Commit** on the repo's current working branch (push only when the user asks)
 3. User runs in the lite area:
    ```bash
    cd ots-lite-test
@@ -23,7 +25,7 @@
 
 - **Never build** — only edit files in `dev-srcs/`. User handles pulls, copies, and builds.
 - **Never run sudo** — if a package is missing, report it and the install command.
-- **Commit on feature/ots-lite** — local commits are OK; always announce each commit.
+- **Commit on the current working branch** — local commits are OK; always announce each commit; never push unless asked.
 - **Push when needed** — so user can `UpdateOTS.sh --pullall` in their lite area.
 - **Derive, don't rewrite** — when creating script variants, copy + minimal edits. Show the diff.
 - **No invented jargon** — use actual file/program names, not coined nicknames.

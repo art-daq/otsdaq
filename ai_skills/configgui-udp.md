@@ -186,6 +186,9 @@ particular instance is hard-coded.
 | `cfg_udp_edit_field.sh <table> <uid> <column> <value> [groupType]` | one-field edit → save → new group → activate; refuses the enable-only gateway UDP edit |
 | `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port and enable flag together, chaining temporary versions |
 | `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
+| `add_desktop_icon.sh [-n] [-w] appstatus\|subsystemlaunch` or `<caption> <alt> <url> <image> [perm] [app] [unique] [folder]` | adds a Desktop icon to the active Context group (see "Desktop icons" below); `-n` is a dry run, `-w` accepts tree warnings |
+| `cfg_udp_edit_group.sh [-n] [-w] [-g newName] <edit>...` | many edits across tables into one new group (cells, links, rows, `new:`/`add:` tables), activate |
+| `add_remote_subsystem.sh` | top-level Context: satellite icon + `SubsystemUserDataPathsTable` row (see `ots-subsystems.md`) |
 
 ## Editing links and adding rows (saveTreeNodeEdit editNodeType values)
 
@@ -209,6 +212,77 @@ Notes from a real run (Visualizer window parameter, `mode=waveform`):
   both new versions in the `tableList` of one `saveNewTableGroup`.
 - Read the result back with `getTreeView ... startPath=/<Table>/<UID>/<LinkColumn>`
   before activating: a link edit shows as the linked rows under that path.
+
+### Tree warnings block a group save
+
+`saveNewTableGroup` (and `activateTableGroup`) can reply with only `<TreeErrors value='...'/>` and no
+`TableGroupKey`: warnings the GUI shows for you to accept (e.g. an Off app linking to a table that is not
+in the group). Resend with `ignoreWarnings=1`. Parse the key with `<TableGroupKey value='` and take the
+first match: an activation with a malformed key leaves the running instance with no active group.
+
+### Reverting to an earlier configuration: "duplicate of an existing group key"
+
+Setting values back recreates a table version that already exists (`saveSpecificTable` with
+`lookForEquivalent=1` returns the old version) and so a group identical to an existing one.
+`saveNewTableGroup` then refuses it: `<Error ... Failed to create table group: <name>. It is a
+duplicate of an existing group key (N)'/>`, with `<TableGroupKey value='N'/>` in the same reply.
+Activate key N instead (the helper scripts do). Note `ots_cfg_udp_test` exits 1 whenever the
+reply holds an `<Error>`: scripts using `set -e` must not let that end them before they read the
+reply (`ots_cfg_udp_test ... || true`).
+
+### Desktop icons (e.g. the App Status icon)
+
+The Configuration GUI has buttons that add standard icons (App Status, Console, Code
+Editor, Iterator). They call `DesktopContent.addDesktopIcon`, i.e. the request
+`addDesktopIcon`, which is implemented by the **GatewaySupervisor**
+(`handleAddDesktopIconRequest` -> `ConfigurationSupervisorBase::handleAddDesktopIconXML`),
+not by the ConfigurationGUISupervisor, so it **cannot be sent over ConfigGUI UDP**.
+The same result is one record in `DesktopIconTable` plus a new Context group:
+
+| Column | App Status icon value |
+|--------|-----------------------|
+| `IconName` (UID) | `generatedIconAppStatus` (`generatedIcon` + letters/digits of the caption) |
+| `Status` | On |
+| `Caption`, `AlternateText` | `App Status`, `STAT` |
+| `ForceOnlyOneInstance` | True |
+| `RequiredPermissionLevel` | 1 |
+| `ImageURL` | `icon-SystemStatus.png` (in `WebGUI/images/iconImages`) |
+| `WindowContentURL` | `/WebPath/html/SystemStatus.html` (the page posts `getAppStatus` etc. to the Gateway) |
+| `LinkToApplicationTable` / `LinkToApplicationUID` | `XDAQApplicationTable` / `Supervisor` (the app with LID 200, the Gateway) |
+| `FolderPath` | `DEFAULT` (means none, like the stock icons) |
+
+Edits: `table-newRow` (`targetColumn=IconName newValue=<uid>`), then `value` edits, then
+`link-UID` for the app link (`newValue=XDAQApplicationTable,Supervisor`); persist, save a
+new Context group, activate. `ai_scripts/add_desktop_icon.sh appstatus` does all of it.
+
+Icons are loaded by the Gateway at startup, so restart `ots` afterwards. Verify with the
+Gateway UDP query `GetRemoteDesktopIcons` (see `gateway-udp-fsm.md`); the reply lists
+`...,App Status,STAT,1,1,icon-SystemStatus.png,http://<host>:<port>/WebPath/html/SystemStatus.html?urn=200&...`.
+A window parameter (`mode=waveform`, below) is a different mechanism: it needs
+`DesktopWindowParameterTable` rows and a parameter link on the icon.
+
+General rule: GUI requests are only reachable over ConfigGUI UDP when the
+ConfigurationGUISupervisor implements them. Requests handled by the Gateway
+(`addDesktopIcon`, `getAppStatus`, `restartApps`, ...) need the equivalent table edit, or
+the Gateway UDP messages.
+
+### First version of a brand-new table (no saved versions yet)
+
+Tree edits cannot start from the empty template: `saveTreeNodeEdit ... targetTableVersion=-1`
+fails with `Invalid latest version`. Create version 0 with `saveSpecificTable` from the
+template (`version=-1`) and the rows as data, exactly as the browser table editor does:
+
+```bash
+ots_cfg_udp_test 127.0.0.1 2010 saveSpecificTable tableName=FESunrockInterfaceTable \
+    version=-1 temporary=0 dataOffset=0 sourceTableAsIs=0 lookForEquivalent=0 \
+    tableComment=First%20version \
+    "data=SunrockInterface0,sunrock-zynq.placeholder,root,22,5,5,My%20comment,;"
+```
+
+`data`: each cell URI-encoded and followed by `,`; each row ends with `;`. All columns in
+order, including `CommentDescription`; the last two (Author, RecordInsertionTime) are
+filled in automatically and may be omitted. Then add the new table as an extra
+`name,version,` pair in the group's `tableList`.
 
 ### Example: pass window parameters to a Desktop icon (Context group)
 

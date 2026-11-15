@@ -98,6 +98,8 @@ class WorkLoopManager;
 		virtual 					~GatewaySupervisor				(void);
 
 		void 						init							(void);
+		void 						startBackgroundWorkLoops		(void);  ///< UDP state changer and app status threads, per the active Context
+		void 						stopBackgroundWorkLoops			(void);  ///< signals and joins them (each exits at its next loop pass)
 
 		void 						Default							(xgi::Input* in, xgi::Output* out);
 
@@ -203,8 +205,8 @@ class WorkLoopManager;
 		static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
 		xoap::MessageReference 			TRACESupervisorRequest							(xoap::MessageReference message);
 
-		static void 					StateChangerWorkLoop							(GatewaySupervisor* supervisorPtr);
-		static void 					AppStatusWorkLoop								(GatewaySupervisor* supervisorPtr, const bool doDisconnected = false);
+		static void 					StateChangerWorkLoop							(GatewaySupervisor* supervisorPtr, const unsigned int generation);
+		static void 					AppStatusWorkLoop								(GatewaySupervisor* supervisorPtr, const unsigned int generation, const bool doDisconnected = false);
 
 		std::string 					attemptStateMachineTransition					(HttpXmlDocument* xmldoc,
 																						std::ostringstream* out,
@@ -538,6 +540,11 @@ public:	//used by remote subsystem control and status
 			bool /* lastStatusGood */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;
 		std::map<std::string, time_t>						remoteAlertCooldown_; ///< guarded by dualStatusThreadMutex_; suppresses repeated desktop alerts per remote app
+
+		///< Background work loops started by startBackgroundWorkLoops(); each exits when
+		///< backgroundWorkLoopGeneration_ no longer matches the generation it was started with.
+		std::atomic<unsigned int>							backgroundWorkLoopGeneration_{0};
+		std::thread											stateChangerThread_, appStatusThread_, appStatusDisconnectedThread_;
 
 		std::string											ipAddressForStateChangesOverUDP_; ///< IP used for UDP reverse-login propagation to remote gateways
 		int													portForReverseLoginOverUDP_ = 0;  ///< UDP port for reverse-login; 0 = disabled
