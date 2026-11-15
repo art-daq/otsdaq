@@ -38,6 +38,23 @@ source setup_ots.sh
   (artdaq-database format), and creates an empty text store `databases/textdb/test_db`, which
   `ARTDAQ_DATABASE_URI` points at (see "Configuration: text store" to fill it).
 
+## Fresh install checklist for an agent's own area (verified 2026-11-15, area `dev-skills`)
+
+An install from dev-srcs (`ots-quick-maxlite-start.sh --branch feature/ots-maxlite --repo-base <dev-srcs>`, 2 minutes) is
+not runnable until four things are done; each has a script:
+1. **Fill the text store** (it starts empty): `ai_scripts/convert_config_store.sh all filesystemdb://<area>/databases/filesystemdb/test_db textdb://<area>/databases/textdb/test_db`,
+   run from a **clean shell** that sources only a lite install of this branch (`env -i ... source <lite>/setup_ots.sh`). Run from the
+   maxlite shell it fails "needs the artdaq-database plugin, which ots maxlite does not build" because `OTS_MAXLITE` is inherited.
+   Result: 35 table versions, 7 group keys, active groups Context 6, Backbone 4, Configuration 2.
+2. **Own ports** (the tutorial data's emulator and data ports 4000-4101, 30000-30001 clash with any other area): a `setup_area.sh` wrapper
+   for the environment ports, then in Wiz mode `ai_scripts/isolate_ots_ports.py --offset 5000 --apply --accept-warnings`.
+3. **Gateway UDP**: the data has none (`PortForStateChangesOverUDP` 0): `ai_scripts/enable_gateway_udp_transitions.sh 127.0.0.1 <port>`.
+4. **No ROOT consumer**: the Visualizer consumer `DB1Consumer1` is `DemoDQMHistosConsumer`, which maxlite does not build (Configure fails
+   "Failed to instantiate consumer plugin"): `cfg_udp_edit_group.sh -w -t Configuration "DataProcessorTable/DB1Consumer1/ProcessorPluginName=RawDataVisualizerConsumer"`.
+After each Configuration/Context change move the alias (`cfg_udp_set_alias.sh <alias>`) and `apply_config_reload.sh PhysicsRuns0 <alias>`;
+`ai_scripts/emulator_ctl.sh start <emulator port>`. Result: Start, stream, Stop saved a file that `read_raw_data.py` decodes, and
+`isolate_ots_ports.py` reports 0 conflicts. The installer should do steps 1 and 4 itself (open item).
+
 ## First run, step by step (verified 2026-11-12)
 
 On a host where another otsdaq may run, give maxlite its own ports first; `ots -k` only stops
