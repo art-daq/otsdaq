@@ -38,7 +38,8 @@ From `DataManager::configure()` and the buffer functions:
 - **Bug found and fixed (needs `mb`):** `RawDataSaverConsumerBase` closed its file in `stopProcessingData()` and so on Pause, and a
   Resume (empty run number) did not reopen it: *verified* on the running install, with the emulator still streaming the file stayed
   at 671,990 bytes after Resume until Stop, i.e. **everything after a Resume was lost**. The fix overrides `pauseProcessingData()` to stop
-  the loop but keep the file open (syntax-checked, not built or run). Until your install has it, do not Pause a run that must be
+  the loop but keep the file open. **Verified after a rebuild (2026-11-15, `dev-skills`)**: the same scenario grew the file from
+  35,760 to 65,560 bytes after Resume and the packets decode. Until your install has it, do not Pause a run that must be
   saved; if you write a saver, do the same.
 - Each producer owns a ring of `BufferSize` **sub-buffers**; a packet is a `std::string` plus a header `map<string,string>`.
   **Every consumer of the buffer receives every packet** (own read position; *verified*: two `RawDataSaverConsumer`s on one buffer
@@ -130,4 +131,4 @@ The cycle (user builds): edit in dev-srcs, `mb` (`mz_uc` for a new file), restar
 | sequence gaps in the file | a consumer too slow (see above) or the UDP socket buffer overflowed: raise `SocketReceiveBufferSize` and `net.core.rmem_max`, lighten the consumer |
 | "There are no available buffers!" in the log | the same: a consumer holds sub-buffers; raise `BufferSize` only if the consumer is bursty, else fix the consumer |
 
-*Not run:* building or loading a new plugin, the Pause/Resume fix itself, TCP and artdaq plugins, `getExtraStatus`, behaviour of a slow consumer under load.
+*Not run:* building or loading a new plugin, TCP and artdaq plugins, `getExtraStatus`, behaviour of a slow consumer under load.

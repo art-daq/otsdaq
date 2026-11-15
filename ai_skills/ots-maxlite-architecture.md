@@ -51,9 +51,11 @@ not runnable until four things are done; each has a script:
 3. **Gateway UDP**: the data has none (`PortForStateChangesOverUDP` 0): `ai_scripts/enable_gateway_udp_transitions.sh 127.0.0.1 <port>`.
 4. **No ROOT consumer**: the Visualizer consumer `DB1Consumer1` is `DemoDQMHistosConsumer`, which maxlite does not build (Configure fails
    "Failed to instantiate consumer plugin"): `cfg_udp_edit_group.sh -w -t Configuration "DataProcessorTable/DB1Consumer1/ProcessorPluginName=RawDataVisualizerConsumer"`.
+5. **Table definitions**: the tutorial data's `Data/TableInfo` predates some tables (the Iterate group needs `IterationCommandIncludedSubsystemsTable`;
+   without it `iteration_plan.py` can not save a group): `UpdateOTS.sh --tables`.
 After each Configuration/Context change move the alias (`cfg_udp_set_alias.sh <alias>`) and `apply_config_reload.sh PhysicsRuns0 <alias>`;
 `ai_scripts/emulator_ctl.sh start <emulator port>`. Result: Start, stream, Stop saved a file that `read_raw_data.py` decodes, and
-`isolate_ots_ports.py` reports 0 conflicts. The installer should do steps 1 and 4 itself (open item).
+`isolate_ots_ports.py` reports 0 conflicts. The installer should do steps 1, 4 and 5 itself (open item).
 
 ## First run, step by step (verified 2026-11-12)
 

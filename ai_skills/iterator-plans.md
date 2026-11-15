@@ -26,7 +26,7 @@ active Iterate group is in `ActiveTableGroups.cfg` like the other types; it can 
 | `run <s> [wait]` | RUN | `DurationInSeconds`, `WaitForAllFrontEndsRunningThread` | Start, run, Stop; with wait the duration is ignored |
 | `start` `stop` `pause` `resume` `halt` | START ... | none | single FSM transitions |
 | `label <L>` / `repeat <L> <n>` | BEGIN_LABEL / REPEAT_LABEL | label, repetitions | the steps between run `n` more times; the pass number (0, 1, ...) feeds modify steps and macro loops |
-| `modify <targets> <path> <start> [step [track]]` | MODIFY_ACTIVE_GROUP | `RelativePathToField`, `FieldStartValue`, `FieldIterationStepSize`, `DoTrackGroupChanges` | sets the field to start + step x pass, then activates; without `track` nothing is saved |
+| `modify <targets> <path> <start> [step [track]]` | MODIFY_ACTIVE_GROUP | `RelativePathToField`, `FieldStartValue`, `FieldIterationStepSize`, `DoTrackGroupChanges` | sets the field to start + step x pass, then activates; without `track` nothing is saved; with `track` each pass saves a new group key, but its changed table is the **scratch** version (number 2147483647), so the stored keys do not keep per-pass values (seen: keys 5 and 6 both read the last value): the Gateway log lines `startValue`, `stepSize`, `currentValue` are the record |
 | `fe-macro` / `mm-macro <targets> <macro> [out=..] [loop=..]` | EXECUTE_FE_MACRO / EXECUTE_MM_MACRO | `MacroName`, targets, loops, optional output file | loops: n iterations, inputs `name=init:step` |
 | `subsystems Set\|Add\|Remove <list>` | SETUP_INCLUDED_SUBSYSTEMS | `Mode`, `Subsystems` | top-level ots with remote subsystems |
 
@@ -72,6 +72,7 @@ A 7-step plan with an FE macro loop, a modify step and a 3-pass label loop was c
 move, disable, remove, enable) with consistent rows, and played after a restart: the pass count, the macro step and
 the modify step ran and the plan ended with no error. `varTest` as an Iterator step failed with the front end's message "Requested argument not found with name 'Plotly_Plot'" in `error_message`
 (a direct run of it works); the input-free `test` macro ran fine.
-Found in the source and fixed in `Iterator.cc` (needs a rebuild, not run): an integer `FieldIterationStepSize` was
-read from the start-value string, so integer modify steps used the start value as the step.
-Not tested: `track`, `mm-macro`, remote subsystems, `out=` files.
+Found in the source and fixed in `Iterator.cc`: an integer `FieldIterationStepSize` was read from the start-value string, so integer
+modify steps used the start value as the step. **Verified 2026-11-15 on a rebuilt area (`dev-skills`)**: a plan with `modify ... 9300 7 track`
+and a 2-pass label loop logged `stepSize 7`, `currentValue 9300` on pass 0 and `9307` on pass 1 (the old code would log 9300 and 18600).
+Not tested: `mm-macro`, remote subsystems, `out=` files.

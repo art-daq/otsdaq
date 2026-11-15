@@ -28,7 +28,8 @@ Steps (each ONE quoted argument; words split like a shell, so quote names that h
   subsystems Set|Add|Remove <a,b,..>   SETUP_INCLUDED_SUBSYSTEMS
   modify <Table>/<UID>[,<Table>/<UID>...] <relative/path/to/field> <start> [<step> [track]]
         MODIFY_ACTIVE_GROUP: set the field of every target to start + step * (pass number of the innermost
-        label loop, 0 on the first pass), then activate; 'track' saves the changes as new table versions and group keys
+        label loop, 0 on the first pass), then activate; 'track' saves a new group key per pass, but with the
+        changed table as the scratch version, so the keys do not keep per-pass values (the Gateway log does)
   fe-macro | mm-macro <Table>/<UID>[,...] <macro name> [out=<path>[:<radix>]] [loop=<n>[@<label>]:<name>=<init>:<step>[:...]]...
         EXECUTE_FE_MACRO (a front-end macro) | EXECUTE_MM_MACRO (a Macro Maker macro) on the targets, with
         dimensional loops: each loop=... is one dimension of <n> iterations whose named inputs start at <init>
