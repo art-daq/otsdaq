@@ -8,6 +8,7 @@ read its header) for usage.
 | Script | Needs | Does |
 |--------|-------|------|
 | [check_ots_status.sh](check_ots_status.sh) | `setup_ots.sh` | quick health check: processes, UDP ports, logs, TRACE, UDP remote controls |
+| [ots_mode.sh](ots_mode.sh) | `setup_ots.sh` | `status`: which mode this installation runs (normal, Wiz, Macro Maker, none) and the URL to open (Wiz: with the access code); `wiz`/`normal` start it (refuse to switch a running mode without `-f`), `stop` = `ots -k` (this USER_DATA only) |
 | [gateway_log_events.sh](gateway_log_events.sh) | `setup_ots.sh` | digest of the Gateway log: remote commands, transitions, the Configure group and key, rejections (`Error - `), failures, crashes; `-s` since the last start, `-a` all ERROR/WARNING lines |
 | [gateway_udp_cmd.sh](gateway_udp_cmd.sh) | Gateway UDP enabled (`gateway-udp-fsm.md`) | send a Gateway UDP message (FSM command or query) and poll the Gateway status until a target state or failure |
 | [apply_config_reload.sh](apply_config_reload.sh) | Gateway UDP, `ots_drive_udp_test` | make a running system use a changed Backbone/Context group: Halt, Shutdown, Startup, Initialize, then Configure `<alias>`; stops at the first failure and prints the Configure log line as proof; `-n` dry run |
