@@ -108,3 +108,8 @@ Registered FE macros (hardcoded, not register-generic):
 - `varTest` — reads 0x1002 and 0x1001, writes 0x1002 and 0x1001
 - `varTest2` — similar to varTest
 - `Slow Controls Pause/Resume` — pauses/resumes the slow controls workloop
+
+Reading a saved run: `ai_scripts/read_raw_data.py $USER_DATA/OutputData/Run_RunN_Raw.dat --channels <0x1007> --bits <width>`
+(the raw data saver writes the packets back to back, without framing; the script finds the packet length
+from the type and sequence bytes). Verified 2026-11-14 on a mode-0 counter run (10-byte packets, counter
+steps of 100) and a mode-2 run of 8 channels at 12 bits (1490-byte packets, 93 samples per channel).
