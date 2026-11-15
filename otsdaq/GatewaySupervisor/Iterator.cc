@@ -2148,7 +2148,7 @@ void Iterator::startCommandModifyActive(IteratorWorkLoopStruct* iteratorStruct)
 		long int stepSize;
 
 		StringMacros::getNumber(startValueStr, startValue);
-		StringMacros::getNumber(startValueStr, stepSize);
+		StringMacros::getNumber(stepSizeStr, stepSize);
 
 		__COUT__ << "startValue " << startValue << std::endl;
 		__COUT__ << "stepSize " << stepSize << std::endl;
