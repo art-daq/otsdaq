@@ -45,7 +45,8 @@ Values:
   `decimal (0xhex)`.
 - Counts and names must match exactly: a missing or extra input, or a wrong output name, fails with "mismatch in number/name of
   input/output arguments" (verified). An FE macro input whose name has spaces or symbols (`Pause Slow Controls (Default = false)`)
-  runs fine as a single macro (verified); it fails only inside a MoM sequence (`macromaker-udp.md`).
+  runs fine as a single macro (verified); inside a MoM sequence it failed in `ots_mm_udp_test` builds before the
+  2026-11-15 fix (`macromaker-udp.md`).
 - Results of `--save` go to `$OTSDAQ_DATA/macroOutput_*.txt`.
 - Over UDP the acting user is `NO-USER` with all-users permission 255: macro permission levels do not block it, and a *private*
   macro means one in `MacroData/NO-USER/`.
@@ -176,8 +177,9 @@ How each Macro Maker step becomes C++ (what the exporter writes; do it by hand t
 
 ## In sequences and plans
 
-- MoM sequence steps: `mm_make_mom.py` (FE macros; checks names against the running Macro Maker). Known: FE macro inputs with
-  spaces/symbols in their names fail in a sequence (`macromaker-udp.md`).
+- MoM sequence steps: `mm_make_mom.py` (FE macros; checks names against the running Macro Maker). FE macro inputs with
+  spaces/symbols in their names work in a sequence since the 2026-11-15 `ots_mm_udp_test` fix; an older build fails them
+  with "mismatch in a name of an input argument" (`macromaker-udp.md`).
 - Iterator plan steps `fe-macro` / `mm-macro` with targets and loops: `iterator-plans.md` (`iteration_plan.py`).
 - Macro Maker macros (files) in a MoM sequence use `macroType` `public`/`private`; `mm_make_mom.py` writes FE-macro steps only.
 

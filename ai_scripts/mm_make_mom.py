@@ -6,7 +6,10 @@ Usage: mm_make_mom.py [-f] [--user NO-USER] [--var NAME=VALUE[:STEP[:MAX]]]... <
 
 Each <step> is ONE argument (quote it):
   "<feUID> <macroName> [input=value ...]"   an FE macro (macro names may contain spaces; inputs by
-                                            name, as listed by: ots_mm_udp_test <ip> <port> <feUID>)
+                                            name, as listed by: ots_mm_udp_test <ip> <port> <feUID>).
+                                            Write the macro name unquoted and quote an input whose name
+                                            has spaces:  "ExampleInterface0 Slow Controls Pause/Resume
+                                            'Pause Slow Controls (Default = false)=true'"
   "delay <seconds>"                         wait
   "mom <sequenceName> [iterations]"         run another sequence (nested MoM)
 Input values may contain variables, $name, defined with --var name=value[:step[:max]]: each
