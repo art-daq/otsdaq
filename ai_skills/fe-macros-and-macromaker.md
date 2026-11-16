@@ -57,7 +57,7 @@ position**, so keep exactly this layout (what `createMacro` and `mm_macro.py new
 ```
 {
 "name":"AgentOffset",
-"sequence":"0:r:100A:old,1:w:100A:newoff,2:d:a,3:r:100A:cur",
+"sequence":"0:r:100A:old,1:w:100A:newoff,2:d:10,3:r:100A:cur",
 "time":"Sun Nov 15 2026",
 "notes":"",
 "LSBF":"false"
@@ -72,7 +72,11 @@ position**, so keep exactly this layout (what `createMacro` and `mm_macro.py new
 | delay | `n:d:<ms>` | wait that many milliseconds |
 
 Rules, all from `FEVInterface::macroStruct_t` (verified where marked):
-- **Numbers in the file are hex without `0x`** (`100A`, delay `a` = 10 ms: verified 50 -> 64 -> 50 with a 10 ms delay).
+- **Addresses and data in the file are hex without `0x`** (`100A`). **The delay is decimal milliseconds** (`d:10` = 10 ms), as the browser
+  writes it and as the export to C++ treats it. Until 2026-11-15 the runner read the delay as hex (a saved `d:100` ran for 256 ms and
+  `d:1000` for 4096 ms: the front end logged `Delay ms: 256`, `4096`); `FEVInterface.cc` now reads a digits-only delay as decimal
+  (verified: 10, 100, 500, 1000 ran as 10, 100, 500, 1000 ms). A delay with hex letters (`d:a`) can only be hand-written and is still hex.
+  Older installs still misread decimal delays.
 - **A field that is not a valid hex number is a variable.** A write/read address, write data and delay can all be variables;
   variables in those fields are the macro's **inputs**; names in a read's last field are its **outputs**.
 - **Name trap:** a variable name made only of `0-9a-fA-F` (`add`, `cafe`, `12`) is read as a hex number, so the macro silently has
@@ -146,11 +150,23 @@ repo). The repository's FE plugins are laid out as `<Plugin>.h`, `<Plugin>Impl.c
 
 ## Promoting a Macro Maker macro to an FE macro
 
-The browser's Macro Maker can export a macro as FE macro code (request `exportFEMacro`): it inserts the registration after the
-constructor's `{` and appends the function before `DEFINE_OTS_INTERFACE`, in `<Plugin>.h` and `<Plugin>_interface.cc`. **From the
-source it can not find those places in the repository's own plugins**: since 2022 the constructor lives in
-`<Plugin>Impl.cc` and `_interface.cc` holds only `DEFINE_OTS_INTERFACE` (not run here: it is a browser action). Do it by hand,
-step by step, the way the generated `varTest` does it:
+The browser's Macro Maker exports a macro as FE macro code: right-click the macro, choose the FE export (with exactly one front end
+selected in the FE list); request `exportFEMacro` with `MacroName`, `PluginName` and the macro's `sequence` (raw, not URL-encoded, as
+the browser sends it). It writes into the plugin's source tree (`OTS_SOURCE`, so Macro Maker must run next to the sources):
+the registration after the constructor's `{`, the function body, and a declaration in `<Plugin>.h`.
+- **Fixed 2026-11-15**: the exporter used to look for the constructor in `<Plugin>_interface.cc`. Since 2022 most plugins keep the
+  constructor and methods in `<Plugin>Impl.cc` (`_interface.cc` holds only `DEFINE_OTS_INTERFACE`), so the export failed with "Could not find
+  the code insert position in the source file ..._interface.cc" (nothing was modified). It now uses `<Plugin>Impl.cc` if present (the function is
+  appended at the end of that file) and falls back to the single-file `<Plugin>_interface.cc` (function inserted before `DEFINE_OTS_INTERFACE`).
+- It also declared its helper variables unconditionally, so a macro without a literal write failed to compile under `-Werror`
+  ("unused variable `macroData`"); they are now `[[maybe_unused]]`.
+- **Verified** (rebuilt `dev-skills`, request sent with `curl` as the browser does): `FEOtsUDPTemplateInterface` (split plugin) export gave a
+  registration, a declaration and a function; `mb` compiled it with the project's `-Werror`; the macro appeared in `mm_macro.py list`
+  and ran on the emulator (`old` 50, `cur` 64, then restored). `myNewInterface` (single file) still exports into `_interface.cc`. The
+  browser dialog itself was not clicked.
+- The macro must have a valid C++ name (letters, digits, `_`); the generated function logs its arguments, so edit it for real use.
+
+How each Macro Maker step becomes C++ (what the exporter writes; do it by hand the same way for a macro the exporter can not reach):
 
 | Macro Maker step | C++ |
 |---|---|
@@ -177,6 +193,6 @@ step by step, the way the generated `varTest` does it:
 | "Invalid command type ..." | malformed `sequence` in the macro file: a step needs `index:type:field[:field]`, a read needs its 4th field (possibly empty) |
 | FE macro missing from `list` after editing | not rebuilt/restarted, or not registered in the constructor |
 
-*Verified 2026-11-15*: list; running FE macros (`test`, `sunrockStatus`, one with a spaced input name) and public/private Macro Maker
+*Verified 2026-11-15*: the export (above); list; running FE macros (`test`, `sunrockStatus`, one with a spaced input name) and public/private Macro Maker
 macros with hex addresses, delay and variables; input-name/count errors; refusal of a hex-only variable name; decimal-vs-hex input
-values. *Not run*: writing or building a new FE macro, the browser export, `LSBF`, `--save`, FE macro permissions, `allowedCallingFEs`.
+values. *Not run*: writing a new FE macro by hand, the browser's export dialog, `LSBF`, `--save`, FE macro permissions, `allowedCallingFEs`.

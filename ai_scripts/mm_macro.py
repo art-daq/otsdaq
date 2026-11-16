@@ -143,7 +143,9 @@ def describe_step(p):
         a = ("$" + p[2]) if is_var(p[2]) else "0x" + p[2]
         return "read  %s%s" % (a, (" -> $" + p[3]) if len(p) > 3 and p[3] else " (value not kept)")
     if k == "d":
-        return "delay %d ms" % int(p[2], 16) if not is_var(p[2]) else "delay $%s ms" % p[2]
+        if is_var(p[2]):
+            return "delay $%s ms" % p[2]
+        return "delay %d ms" % (int(p[2]) if p[2].isdigit() else int(p[2], 16))  # digits: decimal (browser), hex letters: hand-written
     return "?" + ":".join(p)
 
 
@@ -284,7 +286,7 @@ def cmd_new(a):
                 sys.exit("Step %d: the output of a read is a $variable." % n)
             out.append("%d:r:%s:%s" % (n, addr, o))
         elif t and t[0] == "d" and len(t) == 2 and t[1].isdigit():
-            out.append("%d:d:%x" % (n, int(t[1])))
+            out.append("%d:d:%d" % (n, int(t[1])))  # decimal ms, as the browser writes it
         else:
             sys.exit("Step %d '%s': use 'w <addr> <data|$var>', 'r <addr|$var> [$out]' or 'd <ms>'." % (n, s))
     d = macro_dir(private)
