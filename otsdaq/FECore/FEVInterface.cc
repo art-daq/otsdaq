@@ -1707,7 +1707,17 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 			delayOps_.back().delayIsVar_ = localIsVariable(commandPieces[2]);
 
 			if(!delayOps_.back().delayIsVar_)
-				StringMacros::getNumber("0x" + commandPieces[2], delayOps_.back().delay_);
+			{
+				// Macro Maker writes the delay as decimal milliseconds (and exporting the macro to an FE
+				// macro emits it as decimal), so a field of digits only is decimal. A field with hex letters
+				// (a-f) can only have been written by hand: keep reading that as hex.
+				bool isDecimal = true;
+				for(const char c : commandPieces[2])
+					if(c < '0' || c > '9')
+						isDecimal = false;
+				StringMacros::getNumber((isDecimal ? "" : "0x") + commandPieces[2],
+				                        delayOps_.back().delay_);
+			}
 			else
 			{
 				delayOps_.back().delayVarName_ = commandPieces[2];
