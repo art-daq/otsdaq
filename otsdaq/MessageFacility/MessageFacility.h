@@ -3,6 +3,23 @@
 
 #include "otsdaq/Macros/CoutMacros.h"
 
+#ifdef OTS_MAXLITE
+// ots maxlite: no messagefacility; __COUT__ messages go to std::cout and to the web
+// Console through OtsLog. INIT_MF only names the process for the Console (first call wins,
+// as with messagefacility).
+namespace ots
+{
+inline void INIT_MF(const char* name)
+{
+	static bool named = false;
+	if(named || !name)
+		return;
+	named = true;
+	ots::log::setApplicationName(name);
+}
+}  // namespace ots
+#else
+
 #include <messagefacility/MessageLogger/MessageLogger.h>
 #include "artdaq-core/Utilities/configureMessageFacility.hh"
 
@@ -93,5 +110,7 @@ inline void INIT_MF(const char* name)
 }  // end INIT_MF()
 
 }  // namespace ots
+
+#endif  // OTS_MAXLITE
 
 #endif

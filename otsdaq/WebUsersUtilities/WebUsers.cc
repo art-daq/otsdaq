@@ -11,6 +11,8 @@
 
 #include <chrono>  // std::chrono::seconds
 #include <thread>  // std::this_thread::sleep_for
+#include <cinttypes>  // PRIu64/SCNu64: uint64_t is not long on 32-bit ARM
+#include <iomanip>  // std::setw etc.
 
 using namespace ots;
 
@@ -453,8 +455,8 @@ void WebUsers::saveActiveSessions()
 
 		fprintf(fp, "%s\n", ActiveSessions_[i].cookieCode_.c_str());
 		fprintf(fp, "%s\n", ActiveSessions_[i].ip_.c_str());
-		fprintf(fp, "%lu\n", ActiveSessions_[i].userId_);
-		fprintf(fp, "%lu\n", ActiveSessions_[i].sessionIndex_);
+		fprintf(fp, "%" PRIu64 "\n", ActiveSessions_[i].userId_);
+		fprintf(fp, "%" PRIu64 "\n", ActiveSessions_[i].sessionIndex_);
 		fprintf(fp, "%ld\n", ActiveSessions_[i].startTime_);
 		fprintf(fp, "%ld\n", ActiveSessions_[i].lastActivityTime_);
 	}
@@ -517,10 +519,10 @@ void WebUsers::loadActiveSessions()
 		ActiveSessions_.back().ip_ = line;
 
 		fgets(line, LINELEN, fp);
-		sscanf(line, "%lu", &(ActiveSessions_.back().userId_));
+		sscanf(line, "%" SCNu64, &(ActiveSessions_.back().userId_));
 
 		fgets(line, LINELEN, fp);
-		sscanf(line, "%lu", &(ActiveSessions_.back().sessionIndex_));
+		sscanf(line, "%" SCNu64, &(ActiveSessions_.back().sessionIndex_));
 
 		fgets(line, LINELEN, fp);
 		sscanf(line, "%ld", &(ActiveSessions_.back().startTime_));
@@ -654,7 +656,7 @@ bool WebUsers::loadDatabases()
 
 		saveToDatabase(fp, USERS_DB_GLOBAL_STRING, "", DB_SAVE_OPEN);
 		char nidStr[100];
-		sprintf(nidStr, "%lu", usersNextUserId_);
+		sprintf(nidStr, "%" PRIu64, usersNextUserId_);
 		saveToDatabase(fp, USERS_DB_NEXT_UID_STRING, nidStr, DB_SAVE_OPEN_AND_CLOSE);
 		saveToDatabase(fp, USERS_DB_GLOBAL_STRING, "", DB_SAVE_CLOSE);
 		fclose(fp);
@@ -687,7 +689,7 @@ bool WebUsers::loadDatabases()
 				while(i < LINE_LEN && line[i] != '\0' && line[i] != '<')
 					++i;         // find '<'
 				line[i] = '\0';  // close std::string
-				sscanf(&line[si], "%lu", &usersNextUserId_);
+				sscanf(&line[si], "%" SCNu64, &usersNextUserId_);
 				break;  // done with next uid
 			}
 		}
@@ -740,7 +742,7 @@ bool WebUsers::loadDatabases()
 					else if(f == 2)  // salt
 						Users_.back().salt_ = &line[si];
 					else if(f == 3)  // uid
-						sscanf(&line[si], "%lu", &Users_.back().userId_);
+						sscanf(&line[si], "%" SCNu64, &Users_.back().userId_);
 					else if(f == 4)  // permissions
 					{
 						std::map<std::string, permissionLevel_t>& lastPermissionsMap =
@@ -845,7 +847,7 @@ void WebUsers::saveLoginFailureCounts()
 	for(uint64_t i = 0; i < Users_.size(); ++i)
 	{
 		if(Users_[i].loginFailureCount_ > 0)
-			fprintf(fp, "%lu %hhu\n", Users_[i].userId_, Users_[i].loginFailureCount_);
+			fprintf(fp, "%" PRIu64 " %hhu\n", Users_[i].userId_, Users_[i].loginFailureCount_);
 	}
 	fclose(fp);
 }  // end saveLoginFailureCounts()
@@ -873,7 +875,7 @@ void WebUsers::loadLoginFailureCounts()
 
 	uint64_t     uid;
 	unsigned int count;
-	while(fscanf(fp, "%lu %u", &uid, &count) == 2)
+	while(fscanf(fp, "%" SCNu64 " %u", &uid, &count) == 2)
 	{
 		for(auto& user : Users_)
 		{
@@ -957,7 +959,7 @@ bool WebUsers::saveDatabaseToFile(uint8_t db)
 	{
 		saveToDatabase(fp, USERS_DB_GLOBAL_STRING, "", DB_SAVE_OPEN);
 
-		sprintf(fldStr, "%lu", usersNextUserId_);
+		sprintf(fldStr, "%" PRIu64, usersNextUserId_);
 		saveToDatabase(fp, USERS_DB_NEXT_UID_STRING, fldStr, DB_SAVE_OPEN_AND_CLOSE);
 
 		__COUT__ << "Saving " << Users_.size() << " Users." << __E__;
@@ -991,7 +993,7 @@ bool WebUsers::saveDatabaseToFile(uint8_t db)
 					               false);
 				else if(f == 3)  // uid
 				{
-					sprintf(fldStr, "%lu", Users_[i].userId_);
+					sprintf(fldStr, "%" PRIu64, Users_[i].userId_);
 					saveToDatabase(fp,
 					               WebUsers::UsersDatabaseEntryFields_[f],
 					               fldStr,
@@ -1382,14 +1384,14 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 		char entryStr[500];
 		if(h)
 			sprintf(entryStr,
-			        "Time=%lu Username=%s Permissions=%s UID=%lu",
+			        "Time=%lu Username=%s Permissions=%s UID=%" PRIu64,
 			        time(0),
 			        Users_[i].username_.c_str(),
 			        StringMacros::mapToString(Users_[i].permissions_).c_str(),
 			        Users_[i].userId_);
 		else
 			sprintf(entryStr,
-			        "Time=%lu displayName=%s Permissions=%s UID=%lu",
+			        "Time=%lu displayName=%s Permissions=%s UID=%" PRIu64,
 			        time(0),
 			        Users_[i].displayName_.c_str(),
 			        StringMacros::mapToString(Users_[i].permissions_).c_str(),
@@ -1543,14 +1545,14 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid,
 		char entryStr[500];
 		if(h)
 			sprintf(entryStr,
-			        "Time=%lu Username=%s Permissions=%s UID=%lu",
+			        "Time=%lu Username=%s Permissions=%s UID=%" PRIu64,
 			        time(0),
 			        Users_[i].username_.c_str(),
 			        StringMacros::mapToString(Users_[i].permissions_).c_str(),
 			        Users_[i].userId_);
 		else
 			sprintf(entryStr,
-			        "Time=%lu displayName=%s Permissions=%s UID=%lu",
+			        "Time=%lu displayName=%s Permissions=%s UID=%" PRIu64,
 			        time(0),
 			        Users_[i].displayName_.c_str(),
 			        StringMacros::mapToString(Users_[i].permissions_).c_str(),
@@ -1777,7 +1779,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	newRemoteSession.cookieCode_ = cookieCode;
 	newRemoteSession.ip_         = ip;
 	newRemoteSession.userId_     = Users_[j].userId_;
-	sscanf(rxParams[5].c_str(), "%lu", &newRemoteSession.sessionIndex_);
+	sscanf(rxParams[5].c_str(), "%" SCNu64, &newRemoteSession.sessionIndex_);
 	newRemoteSession.startTime_ = time(0);
 
 	// now, need to check lock handling!

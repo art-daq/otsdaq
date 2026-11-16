@@ -3,13 +3,17 @@
 # the xdaq and artdaq header paths so sources compile unchanged; the XDAQ::* targets the
 # rest of otsdaq links are aliased to this one library.
 
+if(DEFINED ENV{OTS_MAXLITE})
+	# maxlite: no messagefacility/fhiclcpp/cetlib (ArtdaqLite.cc keeps only plain C++ parts)
+	set(XDAQLITE_EXTERNAL_LIBRARIES)
+else()
+	set(XDAQLITE_EXTERNAL_LIBRARIES fhiclcpp::fhiclcpp cetlib::cetlib messagefacility::MF_MessageLogger)
+endif()
 cet_make_library(LIBRARY_NAME XdaqLite
 	SOURCE XdaqLite.cc ArtdaqLite.cc
 	LIBRARIES PUBLIC
 	Threads::Threads
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib
-	messagefacility::MF_MessageLogger
+	${XDAQLITE_EXTERNAL_LIBRARIES}
 )
 target_include_directories(XdaqLite PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -35,9 +39,11 @@ install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink ots
 # MessageFacility destinations named in otsdaq's MessageFacility*.fcl files; the originals
 # are in artdaq_mfextensions, which lite does not build. The library names must match the
 # ones MessageFacility looks up: libOTS_mfPlugin.so and libUDP_mfPlugin.so.
+if(NOT DEFINED ENV{OTS_MAXLITE}) # maxlite has no messagefacility
 include(mfPlugin)
 cet_build_plugin(OTS mfPlugin LIBRARIES REG messagefacility::MF_MessageLogger)
 cet_build_plugin(UDP mfPlugin LIBRARIES REG messagefacility::MF_MessageLogger)
+endif()
 
 install(DIRECTORY include DESTINATION include/otsdaq/XdaqLite)
 install_headers()

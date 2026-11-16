@@ -17,8 +17,7 @@ cet_make_library(LIBRARY_NAME tablePluginMaker
   PUBLIC
   otsdaq_plugin_types::ITableBase
   PRIVATE
-  fhiclcpp::fhiclcpp
-  cetlib::cetlib
+  ${OTS_PLUGIN_FACTORY_LIBRARIES} # cetlib+fhiclcpp, or dl in maxlite
 )
 
 cet_register_export_set(SET_NAME tableCore SET_DEFAULT)

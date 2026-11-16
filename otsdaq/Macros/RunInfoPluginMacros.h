@@ -2,7 +2,9 @@
 #define _ots_RunInfoPluginMacro_h_
 
 #include <string>
+#ifndef OTS_MAXLITE  // maxlite has no cetlib; the plain extern "C" fallback below is used
 #include "cetlib/compiler_macros.h"
+#endif
 #include "otsdaq/FiniteStateMachine/RunInfoVInterface.h"  // for Run Info plugins
 
 namespace ots

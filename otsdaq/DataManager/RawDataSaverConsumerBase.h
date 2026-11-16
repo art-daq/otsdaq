@@ -33,6 +33,7 @@ class RawDataSaverConsumerBase : public DataConsumer, public Configurable
 	virtual void writePacketFooter(const std::string& /*data*/) { ; }
 	virtual void startProcessingData(std::string runNumber) override;
 	virtual void stopProcessingData(void) override;
+	virtual void pauseProcessingData(void) override;  ///< stops the work loop, keeps the file open
 	virtual bool workLoopThread(toolbox::task::WorkLoop* workLoop) override;
 	virtual void fastRead(void);
 	virtual void slowRead(void);

@@ -157,7 +157,10 @@ for e in "$@"; do
         [ -n "$t" ] && [ -n "$uid" ] && [ -n "$col" ] || { echo "ERROR: bad edit '$e' (Table/UID/Column=value)."; exit 1; }
         [ -n "${VER[$t]}" ] || { echo "ERROR: $t is not in the group."; exit 1; }
         if [ "$type" = value ]; then nv=$(urlencode "$val")
-        else nv=$(echo "$val" | awk -F, -v OFS=, '{print $1}'),$(urlencode "${val#*,}"); fi
+        else # link-UID/link-GroupID (<table>,<id>) and table-newGroupRow (<linkIndex>,<groupID>,<uid>):
+             # the server splits on raw commas, so encode each field, not the commas
+             nv=""; IFS=, read -r -a parts <<< "$val"
+             for p in "${parts[@]}"; do nv+="${nv:+,}$(urlencode "$p")"; done; fi
         echo "- $t/$uid/$col = $val${type:+ ($type)}"
         r=$(cfg saveTreeNodeEdit targetTable="$t" targetTableVersion="${VER[$t]}" targetUID="$uid" \
             targetColumn="$col" newValue="$nv" editNodeType="$type")

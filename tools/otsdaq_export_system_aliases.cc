@@ -1,6 +1,7 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
 #include <dirent.h>
+#include <sys/stat.h>  // mkdir
 #include <cassert>
 #include <iostream>
 #include <memory>

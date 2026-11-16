@@ -1,5 +1,6 @@
 #include "otsdaq/NetworkUtilities/TCPListenServer.h"
 #include "otsdaq/NetworkUtilities/TCPReceiverSocket.h"
+#include "otsdaq/Macros/CoutMacros.h"  // TLOG
 
 #include <poll.h>
 #include <iostream>

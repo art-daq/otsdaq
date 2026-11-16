@@ -18,8 +18,7 @@ cet_make_library(LIBRARY_NAME runInfoMaker
   PUBLIC
   otsdaq_plugin_types::RunInfoInterface
   PRIVATE
-  fhiclcpp::fhiclcpp
-  cetlib::cetlib
+  ${OTS_PLUGIN_FACTORY_LIBRARIES} # cetlib+fhiclcpp, or dl in maxlite
 )
 
 cet_register_export_set(SET_NAME finiteStateMachine SET_DEFAULT)

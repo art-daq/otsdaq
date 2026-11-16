@@ -6,7 +6,14 @@
 #include <memory>
 #include <string>
 
+#ifdef OTS_MAXLITE
+namespace fhicl
+{
+class ParameterSet;  // maxlite has no fhiclcpp; MetricManager::initialize is never called
+}
+#else
 #include "fhiclcpp/ParameterSet.h"
+#endif
 
 namespace artdaq
 {

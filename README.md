@@ -4,6 +4,8 @@ _otsdaq_ is a Ready-to-Use data-acquisition (DAQ) solution aimed at scaling down
 
 _otsdaq_ provides a library of supported front-end boards and firmware modules which implement a custom UDP protocol.   Additionally, an integrated Run Control GUI and readout software are provided, preconfigured to communicate with _otsdaq_ firmware.
 
+_otsdaq_ is fully Artificial Intelligence (AI) and Super Intelligence (SI) enabled, at all levels, and can be fully engaged by Large Language Model (LLM) agents. From installing and configuring a system, through driving the State Machine, reading and writing front-end registers and visualizing the data, to maintaining its own documentation and tutorials, an LLM agent can do the work. The skills and scripts that teach an agent how are in this repository: [ai_skills](https://github.com/art-daq/otsdaq/tree/develop/ai_skills) and [ai_scripts](https://github.com/art-daq/otsdaq/tree/develop/ai_scripts). To try it, follow the tutorial [Using AI/SI LLM Agents to Control Your Hardware](https://otsdaq.fnal.gov/tutorials/using-ai-agents-with-otsdaq.html).
+
 <a id="install"></a>
 
 # Installing otsdaq
@@ -12,7 +14,7 @@ Run either one-line command in a new, empty directory that is not inside a git c
 Neither needs root. If system packages are missing, the script stops and prints the exact
 `dnf` or `apt` command for an administrator to run, then you rerun the same line.
 
-**otsdaq lite**, about 5 minutes: no Spack, CVMFS, xdaq or artdaq; plain CMake and gcc.
+**otsdaq lite**, 5-10 minutes: no Spack, CVMFS, xdaq or artdaq; plain CMake and gcc.
 See [lite-quick-install-readme.md](https://github.com/art-daq/otsdaq-demo/blob/develop/lite-quick-install-readme.md) for requirements and details.
 
     mkdir ots && cd ots && wget https://raw.githubusercontent.com/art-daq/otsdaq-demo/develop/tools/ots-quick-lite-start.sh && chmod +x ots-quick-lite-start.sh && ./ots-quick-lite-start.sh

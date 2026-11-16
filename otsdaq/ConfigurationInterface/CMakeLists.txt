@@ -23,8 +23,7 @@ cet_make_library(LIBRARY_NAME configInterfaceMaker
   PUBLIC
   otsdaq_plugin_types::IConfigurationInterface
   PRIVATE
-  fhiclcpp::fhiclcpp
-  cetlib::cetlib
+  ${OTS_PLUGIN_FACTORY_LIBRARIES} # cetlib+fhiclcpp, or dl in maxlite
 )
 
 
@@ -45,6 +44,7 @@ SUFFIX configInterface INSTALL_BUILDER
 LIBRARIES CONDITIONAL otsdaq::ConfigurationInterface)
 
 include(otsdaq::configInterface)
+if(NOT DEFINED ENV{OTS_MAXLITE}) # maxlite has no artdaq-database; it uses the Text plugin
 cet_build_plugin(Database otsdaq::configInterface
 LIBRARIES REG
 artdaq-database::ConfigurationDB
@@ -52,8 +52,12 @@ otsdaq::XmlUtilities
 PRIVATE
 artdaq-database::ConfigurationDB
 )
+endif()
 
 cet_build_plugin(File otsdaq::configInterface)
+
+# plain text store (textdb://), no third-party dependencies
+cet_build_plugin(Text otsdaq::configInterface)
 
 install_headers()
 install_source()

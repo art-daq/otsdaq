@@ -215,6 +215,7 @@ void DataManager::configure(void)
 					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
+#ifndef OTS_MAXLITE  // cet::exception exists only with cetlib
 				catch(const cet::exception& e)
 				{
 					__CFG_SS__ << "Failed to instantiate producer plugin named '"
@@ -228,6 +229,7 @@ void DataManager::configure(void)
 					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
+#endif
 				catch(const std::runtime_error& e)
 				{
 					__CFG_SS__ << "Failed to instantiate producer plugin named '"
@@ -334,6 +336,7 @@ void DataManager::configure(void)
 					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
+#ifndef OTS_MAXLITE  // cet::exception exists only with cetlib
 				catch(const cet::exception& e)
 				{
 					__CFG_SS__ << "Failed to instantiate consumer plugin named '"
@@ -347,6 +350,7 @@ void DataManager::configure(void)
 					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
+#endif
 				catch(const std::runtime_error& e)
 				{
 					__CFG_SS__ << "Failed to instantiate consumer plugin named '"

@@ -17,14 +17,15 @@
 
 #include <dirent.h>    //for DIR
 #include <sys/stat.h>  // mkdir
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <chrono>  // std::chrono::seconds
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <thread>  // std::this_thread::sleep_for
-namespace filesystem = boost::filesystem;
+#include <algorithm>
+namespace filesystem = std::filesystem;
 using namespace ots;
 
 // clang-format off

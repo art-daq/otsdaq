@@ -44,6 +44,9 @@ cet_set_compiler_flags(
  NO_UNDEFINED
  EXTRA_FLAGS -pedantic -D_LIBCPP_ENABLE_CXX17_REMOVED_FEATURES=1 ${DT_FLAG}
  )
+if(APPLE) # Apple clang warns where gcc does not (deprecated sprintf, ...): keep -Werror on Linux, warn on macOS
+	add_compile_options(-Wno-error)
+endif()
 
 # Debug streamer.
 string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC)
@@ -76,7 +79,15 @@ if(BTYPE_UC STREQUAL DEBUG)
 	endif()
 endif()
 
-if(DEFINED ENV{OTS_LITE})
+if(DEFINED ENV{OTS_MAXLITE})
+	# ots maxlite (embedded targets): lite without TRACE, messagefacility, cetlib, fhiclcpp,
+	# Boost, artdaq-database, ZeroMQ, CURL or Python. Implies OTS_LITE.
+	message("!!! OTS_MAXLITE build: lite without TRACE, messagefacility, cetlib, fhiclcpp, Boost, artdaq-database, ZeroMQ !!!")
+	add_definitions(-DOTS_LITE -DOTS_MAXLITE)
+	find_package(OpenSSL REQUIRED COMPONENTS Crypto EXPORT) # SHA-512 in WebUsers
+	find_package(Threads REQUIRED EXPORT)
+	set(OTS_PLUGIN_FACTORY_LIBRARIES ${CMAKE_DL_LIBS}) # dlopen plugin loading, otsdaq/Macros/PluginFactory.h
+elseif(DEFINED ENV{OTS_LITE})
 	message("!!! OTS_LITE build: skipping artdaq and xdaq; artdaq-database built without MongoDB !!!")
 	add_definitions(-DOTS_LITE)
 	# found transitively through artdaq in the full build; lite must find them itself
@@ -86,22 +97,32 @@ if(DEFINED ENV{OTS_LITE})
 	find_package(TRACE REQUIRED EXPORT)
 	find_package(Boost QUIET COMPONENTS filesystem REQUIRED EXPORT)
 	find_package(artdaq-database 3.04.00 REQUIRED)
+	if(APPLE) # on macOS cetlib uses CommonCrypto, so libcrypto (SHA-512 in WebUsers) is not transitive
+		find_package(OpenSSL REQUIRED COMPONENTS Crypto EXPORT)
+	endif()
 else()
 	find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
 	find_package(artdaq 3.12.00 REQUIRED EXPORT)
 	find_package(XDAQ 16 REQUIRED EXPORT)
 	find_package(artdaq-database 1.07.00 REQUIRED)
 endif()
+if(NOT DEFINED ENV{OTS_MAXLITE})
+	set(OTS_PLUGIN_FACTORY_LIBRARIES fhiclcpp::fhiclcpp cetlib::cetlib) # cet::BasicPluginFactory
+endif()
 find_package(XercesC 3.2 REQUIRED EXPORT)
+if(NOT DEFINED ENV{OTS_MAXLITE})
 find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
 find_package(CURL REQUIRED EXPORT) # Curl required by artdaq-database, unclear why EXPORT command isn't working
+endif()
 
-if (EXISTS ${artdaq-database_DIR} AND NOT DEFINED ENV{OTS_LITE})
+if (EXISTS "${artdaq-database_DIR}" AND NOT DEFINED ENV{OTS_LITE})
 set(bsoncxx_DIR ${artdaq-database_DIR})
 set(mongocxx_DIR ${artdaq-database_DIR})
 find_package(mongocxx REQUIRED)
 endif()
+if(NOT DEFINED ENV{OTS_MAXLITE})
 find_package(Boost QUIET COMPONENTS date_time program_options regex thread REQUIRED EXPORT)
+endif()
 
 # For version.h
 message("otsdaq PROJECT_VERSION ${PROJECT_VERSION}")

@@ -1,5 +1,5 @@
 #include "otsdaq/FiniteStateMachine/MakeRunInfo.h"
-#include <cetlib/BasicPluginFactory.h>
+#include "otsdaq/Macros/PluginFactory.h"  // cet::BasicPluginFactory, or dlopen in maxlite
 
 #include "otsdaq/FiniteStateMachine/RunInfoVInterface.h"
 
@@ -7,7 +7,7 @@
 ots::RunInfoVInterface* ots::makeRunInfo(const std::string& runInfoPluginClassName,
 										 const std::string& activeStateMachineName)
 {
-	static cet::BasicPluginFactory basicPluginInterfaceFactory("runInfo", "make");
+	static ots::PluginFactory basicPluginInterfaceFactory("runInfo", "make");
 
 	return basicPluginInterfaceFactory.makePlugin<
 		ots::RunInfoVInterface*,

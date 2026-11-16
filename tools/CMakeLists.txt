@@ -10,6 +10,9 @@ cet_make_exec(NAME otsdaq_import_groups_from_export_path LIBRARIES otsdaq::Confi
 cet_make_exec(NAME otsdaq_save_json_document LIBRARIES otsdaq::ConfigurationInterface)
 cet_make_exec(NAME otsdaq_load_json_document LIBRARIES otsdaq::ConfigurationInterface)
 
+# copy a configuration store between artdaq-database (filesystemdb://) and text (textdb://)
+cet_make_exec(NAME otsdaq_convert_config_db LIBRARIES otsdaq::ConfigurationInterface)
+
 
 cet_script(ALWAYS_COPY
     ots_common.sh

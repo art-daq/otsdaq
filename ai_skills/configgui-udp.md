@@ -144,13 +144,23 @@ ots_cfg_udp_test 127.0.0.1 2010 activateTableGroup \
 
 **If ots fails to start after an activation** (`ots` reports the gateway
 process exited during launch and prints the crash lines from
-`$USER_DATA/Logs/otsdaq_quiet_run-gateway-*.txt`), revert without the GUI using
+`$USER_DATA/Logs/otsdaq_quiet_run-gateway-*.txt`; it relaunches at most 3 times,
+then gives up), revert without the GUI using
 `ai_scripts/revert_active_table_group.sh` (see below). It edits
 `$SERVICE_DATA_PATH/ActiveTableGroups.cfg`, which is plain text — pairs of lines
 `<group name>` / `<key>` for Context, Backbone, Iterate, Configuration. Set the
 Context key back to the previous working key (the one reported by
 `getActiveTableGroups` before the activation) and relaunch `ots`. The bad group
 stays in the database; fix the table and save a new group.
+
+A context can also pass the launch checks and exit a few seconds later. About
+30 s after a launch, `ots` checks every context it started again and reports
+each one that stopped (`... process (PID ...) is no longer alive: it exited
+within 30 s after launch.`) with the same crash lines from its log. Processes
+that `ots` killed on purpose (`ots -k`, a relaunch, Shutdown) are not reported.
+When `ots` is run with its output captured (for example `ots 2>&1 | tail`), the
+command returns only after this check, so about 30 s later;
+`OTS_LATE_EXIT_CHECK_SECONDS` changes the delay (`0` turns the check off).
 
 Other useful write requests (same parameter names as the browser):
 
@@ -174,6 +184,27 @@ ots_cfg_udp_test 127.0.0.1 2010 setTableAliasInActiveBackbone \
     tableAlias=Latest tableName=GatewaySupervisorTable version=<SAVED_VERSION>
 ```
 
+## Propagating a change: table, group, alias (the order matters)
+
+A value changed in a table reaches `Configure` only after **all** of these, in this order. A script does each step:
+
+1. **Table version.** Edit the cell (a temporary version), then persist it as a real table version.
+2. **Group key.** Save a new key of the group that holds the table, with the new table version in its list, and activate it.
+   `cfg_udp_edit_field.sh <table> <uid> <column> <value> Configuration` does steps 1 and 2.
+3. **Alias.** `Configure,<alias>` is resolved through the active **Backbone** group, not through the newest group key.
+   `cfg_udp_set_alias.sh <alias>` saves a `GroupAliasesTable` version with the alias on the new key, saves a new key of the
+   Backbone group with that version, and activates it.
+4. **Apply.** The Gateway reads the Backbone when its configuration manager starts. Either restart `ots`, or use
+   `ots_drive_udp_test <ip> <port> <FSM> Halt`, `Shutdown`, `Startup`, `Initialize`, and then `Configure <alias>`.
+
+Check the result in the Gateway log: `Attempting Configure transition with Configuration table group name: <group>, key: <key>`.
+Skipping step 3 leaves Configure on the old key; skipping step 4 leaves the Gateway on the old Backbone.
+Context-group changes (step 2 with the Context group) need a restart or a Shutdown and Startup, as described in `gateway-udp-fsm.md`.
+
+*Verified 2026-11-14 on ots lite:* `FEInterfaceTable` `ExampleInterface0` `Status` On to Off became table version 3 and `defaultConfig` key 3;
+`cfg_udp_set_alias.sh defaultSystemAlias` made GroupAliasesTable version 5 and `TableEditWizBackbone` key 5; Halt, Shutdown, Startup,
+Initialize and Configure then loaded `defaultConfig`, key 3, and MacroMaker listed no front-end.
+
 ## Helper Scripts (otsdaq/ai_scripts)
 
 All take the ConfigGUI UDP address from `OTS_CONFIG_UDP_IP`/`OTS_CONFIG_UDP_PORT`
@@ -184,7 +215,8 @@ particular instance is hard-coded.
 |--------|---------|
 | `cfg_udp_browse_tree.sh [startPath] [depth]` | read-only tree browse of the active Context group |
 | `cfg_udp_edit_field.sh <table> <uid> <column> <value> [groupType]` | one-field edit → save → new group → activate; refuses the enable-only gateway UDP edit |
-| `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port and enable flag together, chaining temporary versions |
+| `cfg_udp_set_alias.sh <alias> [<groupName> <groupKey>]` | points the alias at the group key (default: the active Configuration group): new `GroupAliasesTable` version, new active Backbone key (verified 2026-11-14) |
+| `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port, the enable flag and `EnableApplicationStatusMonitoring` together, chaining temporary versions (verified 2026-11-14: turning monitoring on changed every app from `Not Monitored` to its state) |
 | `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
 | `add_desktop_icon.sh [-n] [-w] appstatus\|subsystemlaunch` or `<caption> <alt> <url> <image> [perm] [app] [unique] [folder]` | adds a Desktop icon to the active Context group (see "Desktop icons" below); `-n` is a dry run, `-w` accepts tree warnings |
 | `cfg_udp_edit_group.sh [-n] [-w] [-g newName] <edit>...` | many edits across tables into one new group (cells, links, rows, `new:`/`add:` tables), activate |

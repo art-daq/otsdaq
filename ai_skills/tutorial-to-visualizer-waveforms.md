@@ -131,10 +131,53 @@ restart ots. *Verified:* the tree read-back shows the Visualizer icon resolving 
 
 Open `http://<host>:2015/urn:xdaq-application:lid=200/`, log in, and open the
 Visualizer window from the desktop; fire a burst with a large count (e.g. `w 0x1001
-0x3E8`) while it is open. **Unverified:** the `getWaveformData` handler returns live
-samples instead of the simulated waves, and what the window displays for a 16-bit
-single-channel sine. Fill this in on the first run that checks it (window name,
-which request to expect, how the trace should look, how to tell live from simulated).
+0x3E8`) while it is open. **Unverified:** what the window displays.
+
+**Server side verified** (ots maxlite, 2026-11-12): `getWaveformData` is in the
+VisualSupervisor's no-login request list, so it can be checked without a browser while
+a burst runs:
+
+```bash
+curl -s -X POST "http://localhost:<port>/urn:xdaq-application:lid=270/Request?RequestType=getWaveformData&numChannels=1&bitWidth=16" -d ""
+```
+Live data replies `<source value='live'/>` with `packetCount`/`packetSeq` rising between
+calls and `<channel_0 value='...'/>` holding the samples (simulated data has no
+`source=live`). With `0x1008=0x40` (period 64), `0x1009=0x32` and `0x100A=0x32`
+(50% amplitude and offset) one packet gives 745 samples from 16383 to 49151 around 32767.
+With offset 0 the negative half reads 0 (clipped), which is not an error.
+
+The Desktop icon must resolve to `Visualization.html?urn=270&mode=waveform` (check with
+`ots_drive_udp_test <ip> <port> raw GetRemoteDesktopIcons`). A Visualizer window opened
+from a desktop loaded before the Context change still runs the ROOT viewer (it requests
+`getDirectoryContents` and logs "Directory browsing with ROOT file support is not
+available in the otsdaq lite build"): reload the desktop page and reopen the window.
+
+## Doing Steps 1-5 with the helper scripts (verified in ots maxlite, 2026-11-12)
+
+All edits as the Kerberos user with `ai_scripts/cfg_udp_edit_group.sh` (it chains the
+temporary versions, saves each table once, saves and activates one group):
+
+```bash
+S=<otsdaq>/ai_scripts
+$S/cfg_udp_edit_group.sh -c "Gateway UDP + Visualizer mode=waveform" \
+  GatewaySupervisorTable/Supervisor0/IPAddressForStateChangesOverUDP=127.0.0.1 \
+  GatewaySupervisorTable/Supervisor0/PortForStateChangesOverUDP=<gw udp port> \
+  GatewaySupervisorTable/Supervisor0/EnableStateChangesOverUDP=Yes \
+  GatewaySupervisorTable/Supervisor0/EnableApplicationStatusMonitoring=Yes \
+  DesktopIconTable/Visualizer/LinkToParameterTable@link-GroupID=DesktopWindowParameterTable,Visualizer_params \
+  DesktopWindowParameterTable/Visualizer_param0/windowParameterGroupID@table-newGroupRow=windowParameters,Visualizer_params,Visualizer_param0 \
+  DesktopWindowParameterTable/Visualizer_param0/windowParameterKey=mode \
+  DesktopWindowParameterTable/Visualizer_param0/windowParameterValue=waveform
+$S/cfg_udp_edit_group.sh -t Configuration \
+  DataProcessorTable/DB1Consumer1/ProcessorPluginName=RawDataVisualizerConsumer
+$S/cfg_udp_edit_group.sh -t Backbone GroupAliasesTable/defaultSystemAlias/GroupKey=<new Configuration key>
+# restart ots, then
+ots_drive_udp_test 127.0.0.1 <gw udp port> PhysicsRuns0 Configure defaultSystemAlias
+ots_drive_udp_test 127.0.0.1 <gw udp port> PhysicsRuns0 Start
+```
+The Backbone edit replaces Step 1c's `setGroupAliasInActiveBackbone` (same result: a
+new `GroupAliasesTable` version in a new Backbone group). Then Step 4 with
+`ots_mm_udp_test` and the check in Step 6.
 
 ## Failure quick reference
 
@@ -150,7 +193,7 @@ which request to expect, how the trace should look, how to tell live from simula
 
 ## Known gaps / ideas to improve this skill
 
-- Step 6 is the open verification (see above).
+- Step 6: the window display itself is still unverified (server side verified).
 - `ots-lite-architecture.md` still says `RawDataVisualizerConsumer` needs full artdaq;
   that is out of date now that it is built and linked in lite.
 - A single script that performs Steps 3-5 (Configure, Start, set registers, burst,

@@ -1,5 +1,6 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationHandler.h"
 #include "otsdaq/ConfigurationInterface/TimeFormatter.h"
+#include "otsdaq/XmlUtilities/XercesPlatform.h"  // thread-safe Xerces Initialize/Terminate
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/XmlUtilities/ConvertFromXML.h"
@@ -67,7 +68,7 @@ void ConfigurationHandler::initPlatform(void)
 {
 	try
 	{
-		xercesc::XMLPlatformUtils::Initialize();  // Initialize Xerces infrastructure
+		ots::XercesPlatform::initialize();  // Initialize Xerces infrastructure
 	}
 	catch(xercesc::XMLException& e)
 	{
@@ -128,7 +129,7 @@ void ConfigurationHandler::terminatePlatform(void)
 
 	try
 	{
-		xercesc::XMLPlatformUtils::Terminate();  // Terminate after release of memory
+		ots::XercesPlatform::terminate();  // Terminate after release of memory
 	}
 	catch(xercesc::XMLException& e)
 	{

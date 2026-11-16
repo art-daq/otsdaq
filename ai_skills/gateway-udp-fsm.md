@@ -144,6 +144,27 @@ Every failure met on the way (missing alias parameter, emulator down, ROOT consu
 not built in lite, alias pointing at the old group) is listed under Troubleshooting
 below with its cause.
 
+## Iterator over Gateway UDP (since 2026-11-12)
+
+`Iterator,<command>[,<parameter>]` passes the browser Iterate window's commands to the Gateway's
+Iterator and replies with its XML (send with `ots_drive_udp_test <ip> <port> raw "..."`):
+
+| Command | Parameter |
+|---------|-----------|
+| `iteratePlay` | iteration plan name (a plan of the `IterateTable`; create and edit plans with `ai_scripts/iteration_plan.py`, see `iterator-plans.md` for when a change takes effect) |
+| `iteratePlayGenerated` | `<fsm>;<alias>;<seconds per run>;<runs>;<keepConfiguration 0/1>;<log entry>` (`;` instead of `,`; log entry URI-encoded twice) |
+| `iteratePause`, `iterateHalt` | none |
+| `getIterationPlanStatus` | none; fields `current_state`, `active_plan`, `active_plan_status`, `current_command_index`/`current_number_of_commands`, `current_command_type`, `current_command_iteration`, `error_message`, `last_finished_plan` |
+
+As in the browser, the Iterator may not take over a state machine another window drives (the
+UDP state changer itself is allowed). A generated plan needs no plan tables: Configure with the
+alias, then `<runs>` runs of `<seconds>` (Start, wait, Stop).
+
+Verified in ots maxlite 2026-11-12 with two contexts (main + `sunrockContext`):
+`raw "Iterator,iteratePlayGenerated,PhysicsRuns0;litedefaultSystemAlias;10;2;0;maxlite%2520iterator%2520test"`
+ran Configure, Start, Stop, Start, Stop in all applications of both contexts and finished in
+~27 s (`last_finished_plan=---GENERATED_PLAN---`, state Configured).
+
 ## Troubleshooting
 
 - `Skipping potential FSM Command because enableStateChanges=false`: enable flag
@@ -162,12 +183,14 @@ below with its cause.
 ## Config changes and the alias must follow the group
 
 Which restart a change needs is in "Applying Active Context changes" below.
+`ai_scripts/apply_config_reload.sh <fsm> [<alias>]` runs Halt, Shutdown, Startup, Initialize (and Configure) and stops at the first failure; `ai_scripts/gateway_log_events.sh` prints the Gateway log lines of these steps (remote commands, transitions, the Configure group and key, `Error - ` rejections). The model behind aliases and Backbone keys: `configuration-model.md`.
 
 
 - Activating a new Configuration group over ConfigGUI UDP does not reload it in
   already-running supervisors: Configure keeps using the group loaded at startup
   (the old consumer/plugin error repeats). Restart `ots` after changing any group
   (observed 2026-11-02 with a total restart; see the matrix below for lighter options).
+- (`ai_scripts/cfg_udp_set_alias.sh <alias>` does the two steps below; `configgui-udp.md` has the whole sequence. The Gateway picks up a new Backbone through Halt, Shutdown, Startup, Initialize, with no `ots` restart: verified 2026-11-14.)
 - `Configure,<alias>` resolves the alias through the **active Backbone group**,
   not the latest `GroupAliasesTable`. A new Configuration group is ignored until
   (1) `setGroupAliasInActiveBackbone groupAlias=<alias> groupName=<group> groupKey=<newKey>`
@@ -268,5 +291,16 @@ Shutdown ended in `Failed` (false crash) and Startup was rejected from `Initial`
 Not tested: that a *changed* Gateway permission takes effect (needs an authenticated browser
 request); only that the properties are reloaded during Startup.
 
-Tip: when you send Startup to a Gateway whose UDP port is changing, use
-`ots_drive_udp_test <ip> <oldPort> <FSM> Startup --no-wait` and follow the status on the new port.
+Since 2026-11-12 `ots_drive_udp_test ... Startup` follows a moved port itself: when the old
+address stops answering it reads `$USER_DATA/ServiceData/GatewayUDPRemoteControl.dat` (written by
+the Gateway when the listener is bound) and polls the new address ("moved from 127.0.0.1 5014 to
+127.0.0.1 5017; following it"). It also keeps polling through the ~2 s with no reply while the
+listener restarts, and allows 60 s (not 10 s) of unchanged status for Startup/Shutdown before
+calling the command rejected (Startup stays `Shutdown` while it relaunches contexts).
+
+Verified in ots maxlite 2026-11-12 (first_demo, one context), all over Gateway UDP with
+`ots_drive_udp_test`: Configure, Start, Pause, Resume, Stop, Start, Stop, Halt, Configure, Halt
+(3 s each), Shutdown (8 s), Startup (15 s), then the full cycle again; Startup with the port changed
+5014 -> 5017 and back moved the listener both ways with the same Gateway process (no restart).
+
+Verified 2026-11-15 on ots maxlite: `iteration_plan.py create TwoRuns "fsm PhysicsRuns0" "configure litedefaultSystemAlias" "label again" "run 5" "repeat again 1"` made the first Iterate group (14 member tables, saved empty where unused), a reload loaded it, and `Iterator,iteratePlay,TwoRuns` ran two 5 s runs and ended with `last_finished_plan` TwoRuns and no error.

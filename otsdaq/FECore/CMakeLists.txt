@@ -27,8 +27,7 @@ cet_make_library(LIBRARY_NAME FrontEndInterfaceMaker
   PUBLIC
   otsdaq_plugin_types::IFEInterface
   PRIVATE
-  fhiclcpp::fhiclcpp
-  cetlib::cetlib
+  ${OTS_PLUGIN_FACTORY_LIBRARIES} # cetlib+fhiclcpp, or dl in maxlite
 )
 
 

@@ -26,6 +26,7 @@
 #include "xgi/Input.h"
 #include "xgi/Output.h"
 
+#include <algorithm>  // std::stable_partition (Console Supervisor constructed first)
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/parsers/XercesDOMParser.hpp>
 #include <xercesc/util/PlatformUtils.hpp>
@@ -654,6 +655,17 @@ int main(int argc, char** argv)
 		if(s.module.empty() || handles.count(s.module) || loadErrors.count(s.module))
 			continue;
 		void* h = dlopen(s.module.c_str(), RTLD_NOW | RTLD_GLOBAL);
+#ifdef __APPLE__
+		// Configurations name modules libX.so (Linux); macOS builds libX.dylib. Try that name too.
+		const std::string soExt = ".so";
+		if(!h && s.module.size() > soExt.size() &&
+		   s.module.compare(s.module.size() - soExt.size(), soExt.size(), soExt) == 0)
+		{
+			const std::string dylib =
+			    s.module.substr(0, s.module.size() - soExt.size()) + ".dylib";
+			h = dlopen(dylib.c_str(), RTLD_NOW | RTLD_GLOBAL);
+		}
+#endif
 		if(!h)
 		{
 			// Not built under OTS_LITE (e.g. libVisualization.so); keep the rest of the context up.
@@ -705,7 +717,14 @@ int main(int argc, char** argv)
 		std::cout << "ots_lite_main: registered " << contexts[i].apps.size()
 		          << " remote applications of context " << contexts[i].url << std::endl;
 	}
-	for(const auto& s : specs)
+	// Construct the Console Supervisor first: messages go to it over UDP (through otsConsoleFwd),
+	// and UDP drops anything sent before its receive socket is open, so constructing it after the
+	// other apps lost their start-up messages (e.g. the Wizard's). Other apps keep their order.
+	std::vector<AppSpec> constructionOrder(specs);
+	std::stable_partition(constructionOrder.begin(),
+	                      constructionOrder.end(),
+	                      [](const AppSpec& a) { return a.className == "ots::ConsoleSupervisor"; });
+	for(const auto& s : constructionOrder)
 	{
 		if(unloadable.count(s.lid))
 			continue;

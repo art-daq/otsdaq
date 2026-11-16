@@ -28,6 +28,7 @@
 #include <toolbox/task/WorkLoopFactory.h>
 #include <xdaq/NamespaceURI.h>
 #include <xoap/Method.h>
+#include <cinttypes>  // PRIu64/SCNu64: uint64_t is not long on 32-bit ARM
 #include <sstream>
 
 #include <sys/stat.h>  // for mkdir
@@ -36,6 +37,9 @@
 #include <cstdio>      // for snprintf
 #include <fstream>
 #include <thread>  // std::this_thread::sleep_for
+#include <iomanip>  // std::setw etc.
+#include <functional>
+#include <algorithm>
 
 using namespace ots;
 
@@ -601,7 +605,7 @@ try
 		sleepUnlessStopped(5);  // stagger the two loops a bit
 	__COUTV__(doDisconnected);
 
-	std::chrono::_V2::system_clock::time_point lastStatus =
+	std::chrono::high_resolution_clock::time_point lastStatus =  // not _V2:: (libstdc++-internal name)
 	    std::chrono::high_resolution_clock::now();
 	time_t lastSlowStatusWarnTime =
 	    time(0);  // suppress during startup while remote gateways are coming up
@@ -4012,6 +4016,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor,
 					    << "\n"
 					    << "GetRemoteDesktopIcons"
 					    << "\n"
+					    << "Iterator,<command>[,<parameter>] - command: iteratePlay "
+					       "(parameter: plan name), iteratePlayGenerated (parameter: "
+					       "<fsm>;<alias>;<seconds per run>;<runs>;<keepConfiguration 0|1>;<log "
+					       "entry>, ';' for ','), iteratePause, iterateHalt, "
+					       "getIterationPlanStatus; replies with the Iterator's XML"
+					    << "\n"
 					    << "GetAliasGlobalFields,<configAlias>"
 					    << "\n"
 					    << "SetGroupAliases,<alias>,<groupName>,<groupKey>,<comment>[,<"
@@ -4844,6 +4854,65 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor,
 					        : "Disabled";
 					__COUT__ << "GetMacroMakerUDPAddress response: " << response << __E__;
 					sock.acknowledge(response, false /* verbose */);
+					continue;
+				}
+				if(buffer.find("Iterator,") == 0)
+				{
+					// The Iterator commands of the browser's Iterate window, over UDP:
+					// Iterator,<command>[,<parameter>]. A generated plan's CSV parameters
+					// are sent with ';' (commas separate the UDP fields).
+					std::string rest = buffer.substr(std::string("Iterator,").size());
+					while(rest.size() && (rest.back() == '\n' || rest.back() == '\r'))
+						rest.pop_back();
+					size_t      comma = rest.find(',');
+					std::string iterCommand =
+					    comma == std::string::npos ? rest : rest.substr(0, comma);
+					std::string iterParameter =
+					    comma == std::string::npos ? "" : rest.substr(comma + 1);
+					if(iterCommand == "iteratePlayGenerated")
+						std::replace(iterParameter.begin(), iterParameter.end(), ';', ',');
+
+					HttpXmlDocument xmlOut;
+					try
+					{
+						if(iterCommand != "iteratePlay" &&
+						   iterCommand != "iteratePlayGenerated" &&
+						   iterCommand != "iteratePause" && iterCommand != "iterateHalt" &&
+						   iterCommand != "getIterationPlanStatus")
+						{
+							__SS__ << "Unknown Iterator command '" << iterCommand
+							       << "' (iteratePlay, iteratePlayGenerated, iteratePause, "
+							          "iterateHalt, getIterationPlanStatus)."
+							       << __E__;
+							__SS_THROW__;
+						}
+						// same rule as the browser path: the Iterator may not take over a
+						// state machine another window is driving (the UDP state changer
+						// itself counts as a remote controller, like the Iterator)
+						const std::string& owner =
+						    theSupervisor->activeStateMachineWindowName_;
+						if(iterCommand != "getIterationPlanStatus" && owner != "" &&
+						   owner != "iterator" && owner != "statechanger")
+						{
+							__SS__ << "The state machine is being driven from window '"
+							       << owner << "'; the Iterator can not take control."
+							       << __E__;
+							__SS_THROW__;
+						}
+						__COUT__ << "Remote Iterator command '" << iterCommand
+						         << "' parameter '" << iterParameter << "'" << __E__;
+						theSupervisor->theIterator_.handleCommandRequest(
+						    xmlOut, iterCommand, iterParameter);
+					}
+					catch(const std::runtime_error& e)
+					{
+						xmlOut.addTextElementToData("Error", e.what());
+					}
+					std::stringstream out;
+					xmlOut.outputXmlDocument((std::ostringstream*)&out,
+					                         false /*dispStdOut*/,
+					                         false /*allowWhiteSpace*/);
+					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
 				}
 				if(buffer.find("ResetConsoleCounts") == 0)
@@ -11739,7 +11808,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 				    theWebUsers_.getActiveSessionCountForUser(uid) -
 				    1;  // subtract 1 to remove just started session from count
 				char asStr[20];
-				sprintf(asStr, "%lu", asCnt);
+				sprintf(asStr, "%" PRIu64, asCnt);
 				xmldoc.addTextElementToData("user_active_session_count", asStr);
 			}
 
@@ -11812,7 +11881,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 				    theWebUsers_.getActiveSessionCountForUser(uid) -
 				    1;  // subtract 1 to remove just started session from count
 				char asStr[20];
-				sprintf(asStr, "%lu", asCnt);
+				sprintf(asStr, "%" PRIu64, asCnt);
 				xmldoc.addTextElementToData("user_active_session_count", asStr);
 			}
 

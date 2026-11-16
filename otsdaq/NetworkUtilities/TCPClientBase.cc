@@ -5,7 +5,7 @@
 #include <netdb.h>
 #include <netinet/in.h>  // inet_aton, struct sockaddr_in
 #include <strings.h>     // bzero
-#include <boost/regex.hpp>
+#include <regex>
 #include <iostream>
 #include <thread>
 
@@ -140,10 +140,10 @@ void TCPClientBase::resolveServer(std::string& serverIP)
 	    "\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
 	    "\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
 	    "\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
-	boost::regex ip_regex(ipv4.c_str());
+	std::regex ip_regex(ipv4);
 
 	// __COUT__ << "Checking exp1: " << serverIP << std::endl;
-	if(boost::regex_match(serverIP, ip_regex))  // It is already in the correct format!
+	if(std::regex_match(serverIP, ip_regex))  // It is already in the correct format!
 		return;
 	else if(serverIP == "localhost" || serverIP == "localhost.localdomain")
 	{

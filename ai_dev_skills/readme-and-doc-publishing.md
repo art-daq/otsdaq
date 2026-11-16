@@ -109,8 +109,8 @@ https://otsdaq.fnal.gov/docs/code/ (and `/docs/dev/`) is an older, manual path:
 The README's "Installing otsdaq" section has one line for each install, both from
 `otsdaq-demo/tools` on develop:
 
-- **otsdaq lite**: `ots-quick-lite-start.sh`, about 5 minutes on a 24-core machine (measured
-  4 min 38 s on 2026-11-04). Details are in `otsdaq-demo/lite-quick-install-readme.md`.
+- **otsdaq lite**: `ots-quick-lite-start.sh`, 5-10 minutes (measured 4 min 38 s on a 24-core
+  machine on 2026-11-04). Details are in `otsdaq-demo/lite-quick-install-readme.md`.
 - **Full otsdaq**: `ots-quick-spack-start_v1.1.sh`, under an hour with CVMFS or an upstream area
   and more than two hours from scratch. Download the versioned file:
   `ots-quick-spack-start.sh` is a git symlink, and `raw.githubusercontent.com` serves the link

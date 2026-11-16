@@ -6,12 +6,15 @@
 
 #include "artdaq-core/Utilities/configureMessageFacility.hh"
 #include "artdaq/BuildInfo/GetPackageBuildInfo.hh"
+#ifndef OTS_MAXLITE
 #include "fhiclcpp/make_ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#endif
 
 #include <iostream>
 #include <sstream>
 #include <thread>  //for std::thread
+#include <functional>
 
 using namespace ots;
 
@@ -130,6 +133,7 @@ void FEVInterfacesManager::createInterfaces(void)
 			__CFG_COUTTV__(theFEInterfaces_[interface.first]
 			                   ->VStateMachine::parentSupervisor_->getSupervisorUID());
 		}
+#ifndef OTS_MAXLITE  // cet::exception exists only with cetlib
 		catch(const cet::exception& e)
 		{
 			__CFG_SS__
@@ -141,6 +145,7 @@ void FEVInterfacesManager::createInterfaces(void)
 			__COUT_ERR__ << ss.str();
 			__CFG_SS_THROW__;
 		}
+#endif
 		catch(const std::runtime_error& e)
 		{
 			__CFG_SS__

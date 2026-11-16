@@ -7,7 +7,6 @@ version.cc
 		 otsdaq::CgiDataUtilities
 		 otsdaq::GatewaySupervisor
           otsdaq::SupervisorInfo
-	  Boost::filesystem
 )
 install_headers()
 install_source()

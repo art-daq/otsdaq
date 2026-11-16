@@ -1,5 +1,6 @@
 #include "otsdaq/XmlUtilities/XmlDocument.h"
 #include "otsdaq/Macros/CoutMacros.h"
+#include "otsdaq/XmlUtilities/XercesPlatform.h"  // thread-safe Xerces Initialize/Terminate
 #include "otsdaq/Macros/MessageTools.h"
 #include "otsdaq/Macros/StringMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
@@ -29,7 +30,7 @@
 #include <xercesc/framework/LocalFileFormatTarget.hpp>
 #include <xercesc/util/OutOfMemoryException.hpp>
 
-#include <boost/regex.hpp>
+#include <regex>
 
 #include <iostream>
 #include <list>
@@ -145,7 +146,7 @@ void XmlDocument::initPlatform(void)
 {
 	try
 	{
-		xercesc::XMLPlatformUtils::Initialize();  // Initialize Xerces infrastructure
+		ots::XercesPlatform::initialize();  // Initialize Xerces infrastructure
 		                                          //__COUT__ << "Initialized new
 		                                          // theDocument_" << std::endl;
 	}
@@ -173,7 +174,7 @@ void XmlDocument::terminatePlatform(void)
 
 	try
 	{
-		xercesc::XMLPlatformUtils::Terminate();  // Terminate after release of memory
+		ots::XercesPlatform::terminate();  // Terminate after release of memory
 	}
 	catch(xercesc::XMLException& e)
 	{
@@ -690,9 +691,9 @@ void XmlDocument::makeDirectoryBinaryTree(const std::string&   fSystemPath,
 		else
 		{
 			newFullPath = fSystemPath_ + std::string("/") + std::string(entry->d_name);
-			boost::smatch what;
-			boost::regex  re{".*\\.root$"};
-			if(boost::regex_search(newFullPath, what, re))
+			std::smatch what;
+			std::regex  re{".*\\.root$"};
+			if(std::regex_search(newFullPath, what, re))
 			{
 				fFileName_    = std::string(entry->d_name);
 				fFoldersPath_ = "";
