@@ -20,6 +20,9 @@ A **version** belongs to a table, a **key** to a group: "defaultConfig key 4" an
 "FEInterfaceTable version 4" are unrelated numbers. Nothing saved is ever overwritten: every
 edit makes a new table version, and every change of membership a new group key.
 
+A table needs only its definition to work. A C++ **table plugin** (`table-plugins.md`) is optional: it adds code that
+runs when the group is activated, or a typed object for application code.
+
 ## Group types
 
 The type of a group follows from its member tables (`ConfigurationManager::getTypeOfGroup`):
