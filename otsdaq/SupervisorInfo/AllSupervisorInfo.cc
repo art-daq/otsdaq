@@ -562,6 +562,18 @@ AllSupervisorInfo::getOrderedSupervisorDescriptors(
 			auto it = allSupervisorInfo_.find(priorityApp);
 			if(it == allSupervisorInfo_.end())
 			{
+				// Shutdown and Startup must still work when the active Context no longer matches the launched one
+				if(onlyGatewayContextSupervisors)
+				{
+					__COUT_WARN__ << "Skipping app.id_ " << priorityApp << " priority "
+					              << (unsigned int)priorityAppVector.first
+					              << " for command " << stateMachineCommand
+					              << " because it is not in the running AllSupervisorInfo. "
+					                 "Has the Context changed since ots was launched?"
+					              << __E__;
+					continue;
+				}
+
 				__SS__
 				    << "Error! Was AllSupervisorInfo properly initialized? The app.id_ "
 				    << priorityApp << " priority "

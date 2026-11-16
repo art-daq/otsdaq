@@ -137,6 +137,13 @@ RunControlStateMachine::RunControlStateMachine(const std::string& name)
 	    this,
 	    &RunControlStateMachine::transitionShuttingDown);
 	RunControlStateMachine::addStateTransition(
+	    'I',
+	    'X',
+	    RunControlStateMachine::SHUTDOWN_TRANSITION_NAME,
+	    "Shutting Down",
+	    this,
+	    &RunControlStateMachine::transitionShuttingDown);
+	RunControlStateMachine::addStateTransition(
 	    'X',
 	    'I',
 	    RunControlStateMachine::STARTUP_TRANSITION_NAME,
