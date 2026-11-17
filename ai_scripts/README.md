@@ -42,6 +42,7 @@ read its header) for usage.
 | [check_maxlite_libraries.sh](check_maxlite_libraries.sh) | readelf | list the shared libraries an ots maxlite install needs and flag ones maxlite must not need (TRACE, messagefacility, cetlib, fhiclcpp, Boost, artdaq, ZeroMQ, CURL, ICU...); works on cross-compiled installs |
 | [switch_ots_tutorial.sh](switch_ots_tutorial.sh) | `setup_ots.sh`, `filesystemdb://` store, network | variant of `otsdaq-demo/tools/reset_ots_tutorial.sh` that kills nothing: refuses while this installation runs, installs `--tutorial <name>` data, prints the `.bak` copies it kept; `--launch` starts ots and the emulator (only if UDP 4000 is free) |
 | [revert_active_table_group.sh](revert_active_table_group.sh) | file access to `Data/ServiceData` | revert an active group key when `ots` cannot start |
+| [slow_controls_epics_check.sh](slow_controls_epics_check.sh) | read access to `$OTSDAQ_EPICS_DATA` (Mu2e OTSReader) | read-only: the owner's generated PV file (time, record count, matching records), the dirty flag, and whether the IOC start file loads it (skill `slow-controls-to-epics.md`) |
 
 Config-changing scripts act as the Kerberos user and never proceed anonymously unless the user
 confirms. Context and Backbone changes need an `ots` restart to take effect.
