@@ -132,7 +132,13 @@ void get(TableBase*&                          table,
 	// take advantage of version possibly being cached
 	if(table->isStored(version))
 	{
-		if(rawDataOnly || looseColumnMatching)  // clear cached version
+		bool fillFailedBefore = false;  // true if the stored view is what a failed fill left behind
+		{
+			std::unique_lock<std::mutex> lock(fillFailedViewsMutex_);
+			fillFailedBefore = fillFailedViews_.erase(std::make_pair((const TableBase*)table, version)) > 0;
+		}
+
+		if(rawDataOnly || looseColumnMatching || fillFailedBefore)  // clear cached version
 			table->eraseView(version);
 		else  // use cached version
 		{
@@ -270,10 +276,15 @@ void get(TableBase*&                          table,
 	catch(const std::runtime_error& e)
 	{
 		// The failed fill leaves a partly filled view stored for this version (columns missing in the
-		// source hold their default values). Erase it, or the next get() takes it as a valid cached
-		// version and returns it with no error (e.g. a second group activation succeeded silently).
-		if(table)
-			table->eraseView(version);
+		// source hold their default values). It is kept, because a caller that accumulates warnings
+		// may use it; mark it, so that the next get() fills it again and reports the error again,
+		// instead of taking it as a valid cached version (a second activation of the same group
+		// succeeded with no error).
+		if(table && table->isStored(version))
+		{
+			std::unique_lock<std::mutex> lock(fillFailedViewsMutex_);
+			fillFailedViews_.emplace(table, version);
+		}
 
 		__SS__ << "Error occurred while getting and filling Table \"" << tableName
 		       << "\" version:" << version << std::endl;
@@ -282,8 +293,11 @@ void get(TableBase*&                          table,
 	}
 	catch(...)
 	{
-		if(table)  // same as above: do not leave a partly filled view in the cache
-			table->eraseView(version);
+		if(table && table->isStored(version))  // same as above: mark the partly filled view
+		{
+			std::unique_lock<std::mutex> lock(fillFailedViewsMutex_);
+			fillFailedViews_.emplace(table, version);
+		}
 
 		__SS__ << "Unknown error occurred while getting and filling Table \"" << tableName
 		       << "\" version:" << version << std::endl;
