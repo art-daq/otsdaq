@@ -94,7 +94,9 @@ xoap::MessageReference SOAPMessenger::sendWithSOAPReply(
 
 //==============================================================================
 xoap::MessageReference SOAPMessenger::sendWithSOAPReply(
-    XDAQ_CONST_CALL xdaq::ApplicationDescriptor* ind, xoap::MessageReference message)
+    XDAQ_CONST_CALL xdaq::ApplicationDescriptor* ind,
+    xoap::MessageReference                       message,
+    unsigned int                                 replyTimeoutSeconds /* = 300 */)
 
 {
 	// const_cast away the const
@@ -106,7 +108,7 @@ xoap::MessageReference SOAPMessenger::sendWithSOAPReply(
 	{
 		message->getMimeHeaders()->setHeader("Content-Location", d->getURN());
 		message->getMimeHeaders()->setHeader("xdaq-pthttp-connection-timeout",
-		                                     "300" /*seconds*/);
+		                                     std::to_string(replyTimeoutSeconds) /*seconds*/);
 
 		//__COUT__ << d->getURN() << __E__;
 		//__COUT__ << SOAPUtilities::translate(message) << __E__;

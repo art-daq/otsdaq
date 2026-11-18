@@ -1080,8 +1080,11 @@ try
 							try
 							{
 								// Restoring active backbone/context group, note: not using Gateway instance's member CorePropertySupervisorBase::theConfigurationManager_
+								//	Do not throw on group load errors: the icons only need the Context group, and a problem
+								//	in another active group (e.g. an Iterate group missing a newly added member table) must not
+								//	block the remote gateway list. If the Context itself failed to load, the icon table get below throws.
 								cfgMgr.restoreActiveTableGroups(
-								    true /*throwErrors*/,
+								    false /*throwErrors*/,
 								    "" /*pathToActiveGroupsFile*/,
 								    ConfigurationManager::LoadGroupType::
 								        ONLY_BACKBONE_OR_CONTEXT_TYPES /*onlyLoadIfBackboneOrContext*/
@@ -6342,6 +6345,20 @@ try
 	}
 	//FSM name validated
 
+	/////////////////
+	// Tell every supervisor "get ready for <transition> - are you ready?"
+	//	(done before the log entry and run number handling, so that a refusal has no side effects)
+	//	Not done for Error/Fail, or when a transition is already in progress
+	//	(then the supervisors were already told).
+	getReadyNoticeAwaitingLaunch_ = false;
+	if(command != RunControlStateMachine::ERROR_TRANSITION_NAME &&
+	   command != RunControlStateMachine::FAIL_TRANSITION_NAME &&
+	   !theStateMachine_.isInTransition())
+	{
+		sendGetReadyForTransition(command);  //throws if a supervisor stays not ready
+		getReadyNoticeAwaitingLaunch_ = true;
+	}
+
 	stateMachineTransitionUsername_ =
 	    username;  // set the username for this transition attempt (used for logging and logbook entry)
 
@@ -6790,7 +6807,19 @@ try
 	xoap::MessageReference message =
 	    SOAPUtilities::makeSOAPMessageReference(command, parameters);
 	// Maybe we return an acknowledgment that the message has been received and processed
-	xoap::MessageReference reply = stateMachineXoapHandler(message);
+	//	Note: once launched, stateMachineThread() sends the "stand down" notice
+	const bool getReadyNoticeWasSent = getReadyNoticeAwaitingLaunch_;
+	getReadyNoticeAwaitingLaunch_    = false;
+	try
+	{
+		stateMachineXoapHandler(message);
+	}
+	catch(...)
+	{
+		if(getReadyNoticeWasSent)
+			sendStandDownForTransition(command, false /*transitionCompleted*/);
+		throw;
+	}
 	// stateMachineWorkLoopManager_.removeProcessedRequests();
 	// stateMachineWorkLoopManager_.processRequest(message);
 
@@ -6822,6 +6851,12 @@ catch(...)
 
 	__COUT_ERR__ << "\n" << ss.str();
 
+	if(getReadyNoticeAwaitingLaunch_)  //supervisors were told to get ready, but the transition was never launched
+	{
+		getReadyNoticeAwaitingLaunch_ = false;
+		sendStandDownForTransition(command, false /*transitionCompleted*/);
+	}
+
 	if(xmldoc)
 		xmldoc->addTextElementToData("state_transition_attempted",
 		                             "0");  // indicate to GUI transition NOT attempted
@@ -6835,6 +6870,225 @@ catch(...)
 
 	return ss.str();
 }  // end attemptStateMachineTransition() error handling
+
+//==============================================================================
+/// sendGetReadyForTransition
+///	Before a transition, tell every supervisor "get ready for <transition> - are you ready?"
+///
+///	If a supervisor answers not ready, or gives no answer (silence is treated as "not yet",
+///	e.g., it is busy with a request like a running macro), ask again about once per second
+///	(up to 8 seconds total), then tell the supervisors to stand down and throw an exception
+///	for the user.
+///
+///	Halt, Abort and Shutdown are never refused (the system must always be able to stop):
+///	after the same wait, the transition goes ahead for all supervisors, and when the others
+///	are done the exception is thrown, so the Gateway state machine goes to Failed
+///	(see throwIfSupervisorsWereNotReadyForTransition()).
+void GatewaySupervisor::sendGetReadyForTransition(const std::string& transitionName)
+{
+	const bool transitionIsNeverRefused =
+	    transitionName == RunControlStateMachine::HALT_TRANSITION_NAME ||
+	    transitionName == RunControlStateMachine::ABORT_TRANSITION_NAME ||
+	    transitionName == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME;
+	supervisorsNotReadyForTransitionReport_ = "";
+	const unsigned int replyTimeoutSeconds    = 2;
+	const time_t       maxNotReadyWaitSeconds = 8;
+	const time_t       getReadyStartTime      = time(0);
+	unsigned int       readyCount             = 0;
+
+	__COUT__ << "Sending 'get ready' for transition '" << transitionName
+	         << "' to all supervisors..." << __E__;
+
+	for(const auto& supervisorInfoPair : allSupervisorInfo_.getAllSupervisorInfo())
+	{
+		const SupervisorInfo& supervisorInfo = supervisorInfoPair.second;
+		if(supervisorInfo.isGatewaySupervisor())
+			continue;  //skip self
+
+		while(true)  //ask until ready or out of time
+		{
+			const time_t askStartTime = time(0);
+			std::string  readyAnswer, notReadyReason;
+			try
+			{
+				SOAPParameters noticeParameters;
+				noticeParameters.addParameter("Notice", "GetReady");
+				noticeParameters.addParameter("Transition", transitionName);
+				noticeParameters.addParameter("Result", "");
+
+				xoap::MessageReference reply = SOAPMessenger::sendWithSOAPReply(
+				    supervisorInfo.getDescriptor(),
+				    SOAPUtilities::makeSOAPMessageReference(
+				        "SystemTransitionNotice" /*handled by CoreSupervisorBase::systemTransitionNotice*/,
+				        noticeParameters),
+				    replyTimeoutSeconds);
+
+				SOAPParameters replyParameters;
+				replyParameters.addParameter("Ready");
+				replyParameters.addParameter("Reason");
+				SOAPUtilities::receive(reply, replyParameters);
+				readyAnswer    = replyParameters.getValue("Ready");
+				notReadyReason = replyParameters.getValue("Reason");
+			}
+			catch(...)
+			{
+				readyAnswer = "";  //no answer
+			}
+
+			if(readyAnswer == "1")
+			{
+				++readyCount;
+				break;
+			}
+
+			//here, supervisor reported not ready, or gave no answer (treated as "not yet")
+			const bool   gaveNoAnswer        = readyAnswer != "0";
+			const time_t notReadyWaitSeconds = time(0) - getReadyStartTime;
+
+			if(notReadyWaitSeconds >= maxNotReadyWaitSeconds)
+			{
+				if(!transitionIsNeverRefused)
+					sendStandDownForTransition(transitionName,
+					                           false /*transitionCompleted*/);
+
+				__SS__ << "Transition '" << transitionName << "' "
+				       << (transitionIsNeverRefused
+				               ? "was done for the other supervisors without waiting longer for '"
+				               : "could not start due to '")
+				       << supervisorInfo.getName() << "' (LID " << supervisorInfo.getId()
+				       << " in context '" << supervisorInfo.getContextName() << "') ";
+				if(gaveNoAnswer)
+					ss << "not answering whether it is ready (it may be busy with a "
+					      "request, for example a running macro, or its process may be "
+					      "gone). Check '"
+					   << supervisorInfo.getName()
+					   << "' logs to understand why it did not answer.";
+				else
+					ss << "reporting that it is not ready. Check '"
+					   << supervisorInfo.getName()
+					   << "' logs to understand why it is not ready.";
+				if(notReadyReason != "")
+					ss << " Here is the reason it gave: " << notReadyReason;
+				ss << __E__;
+				if(!transitionIsNeverRefused)
+					__SS_THROW__;
+
+				//here, the transition goes ahead; keep the text for the user for when the transition is done
+				__COUT_ERR__ << ss.str();
+				supervisorsNotReadyForTransitionReport_ += ss.str() + "\n";
+				break;  //on to the next supervisor (each one after this is asked once, since the wait time is used up)
+			}
+
+			__COUT__ << "Supervisor '" << supervisorInfo.getName() << "' "
+			         << (gaveNoAnswer ? "did not answer 'get ready'"
+			                          : "is not ready")
+			         << " for transition '" << transitionName << "' (waited "
+			         << notReadyWaitSeconds << " of " << maxNotReadyWaitSeconds
+			         << " seconds). Reason: " << notReadyReason << __E__;
+
+			if(time(0) == askStartTime)  //ask again about once per second
+				sleep(1);
+		}  //end ask loop
+	}      //end supervisor loop
+
+	__COUT__ << "Done sending 'get ready' for transition '" << transitionName << "': "
+	         << readyCount << " supervisor(s) ready." << __E__;
+}  // end sendGetReadyForTransition()
+
+//==============================================================================
+/// throwIfSupervisorsWereNotReadyForTransition
+///	Called by the Gateway's Halt/Abort/Shutdown transition after the broadcast to the
+///	supervisors is done. If the transition went ahead although some supervisors were
+///	not ready, throw now, so that the Gateway state machine goes to Failed with this error.
+void GatewaySupervisor::throwIfSupervisorsWereNotReadyForTransition(void)
+{
+	if(supervisorsNotReadyForTransitionReport_ == "")
+		return;
+
+	__SS__ << supervisorsNotReadyForTransitionReport_ << __E__;
+	supervisorsNotReadyForTransitionReport_ = "";
+	__SS_THROW__;
+}  // end throwIfSupervisorsWereNotReadyForTransition()
+
+//==============================================================================
+/// reportSupervisorsNotReadyForTransition
+///	Fallback, called when a transition is done: if the text was not already thrown by
+///	throwIfSupervisorsWereNotReadyForTransition() (e.g., the broadcast failed first with
+///	another error), give it to the users as a system message. Never throws.
+void GatewaySupervisor::reportSupervisorsNotReadyForTransition(void)
+{
+	try
+	{
+		if(supervisorsNotReadyForTransitionReport_ == "")
+			return;
+
+		const std::string report                = supervisorsNotReadyForTransitionReport_;
+		supervisorsNotReadyForTransitionReport_ = "";
+
+		__COUT_ERR__ << report << __E__;
+		GatewaySupervisor::addSystemMessage("*" /*toUserCSV*/, report);
+	}
+	catch(...)
+	{
+		__COUT_ERR__ << "Unexpected exception reporting supervisors that were not ready."
+		             << __E__;
+	}
+}  // end reportSupervisorsNotReadyForTransition()
+
+//==============================================================================
+/// sendStandDownForTransition
+///	After a transition (or a failed attempt), tell every supervisor
+///	"stand down - <transition> completed/failed." Never throws.
+void GatewaySupervisor::sendStandDownForTransition(const std::string& transitionName,
+                                                   bool transitionCompleted)
+{
+	const unsigned int replyTimeoutSeconds = 2;
+	const std::string  transitionResult    = transitionCompleted ? "completed" : "failed";
+	unsigned int       noAnswerCount       = 0;
+
+	try
+	{
+		for(const auto& supervisorInfoPair : allSupervisorInfo_.getAllSupervisorInfo())
+		{
+			const SupervisorInfo& supervisorInfo = supervisorInfoPair.second;
+			if(supervisorInfo.isGatewaySupervisor())
+				continue;  //skip self
+
+			try
+			{
+				SOAPParameters noticeParameters;
+				noticeParameters.addParameter(
+				    "Notice", "StandDown");
+				noticeParameters.addParameter("Transition", transitionName);
+				noticeParameters.addParameter("Result", transitionResult);
+
+				SOAPMessenger::sendWithSOAPReply(
+				    supervisorInfo.getDescriptor(),
+				    SOAPUtilities::makeSOAPMessageReference(
+				        "SystemTransitionNotice" /*handled by CoreSupervisorBase::systemTransitionNotice*/,
+				        noticeParameters),
+				    replyTimeoutSeconds);
+			}
+			catch(...)
+			{
+				++noAnswerCount;
+				__COUT_WARN__ << "Supervisor '" << supervisorInfo.getName() << "' (LID "
+				              << supervisorInfo.getId()
+				              << ") did not answer 'stand down' for transition '"
+				              << transitionName << ".'" << __E__;
+			}
+		}
+	}
+	catch(...)
+	{
+		__COUT_ERR__ << "Unexpected exception sending 'stand down' for transition '"
+		             << transitionName << ".'" << __E__;
+	}
+
+	__COUT__ << "Sent 'stand down' - transition '" << transitionName << "' "
+	         << transitionResult << " - to all supervisors (" << noAnswerCount
+	         << " gave no answer)." << __E__;
+}  // end sendStandDownForTransition()
 
 //==============================================================================
 xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(
@@ -6856,13 +7110,14 @@ xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(
 /// state  machine.
 bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 {
-	bool holdingSemaphore = false;
+	bool        holdingSemaphore = false;
+	std::string command;
 	try
 	{
 		stateMachineSemaphore_.take();
 		holdingSemaphore = true;
 
-		std::string command =
+		command =
 		    SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop))
 		        .getCommand();
 
@@ -6884,6 +7139,14 @@ bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 			       << "!' An error response '" << reply << "' was received." << __E__;
 			__COUT_ERR__ << ss.str();
 		}
+
+		// Tell every supervisor "stand down - <transition> completed/failed"
+		//	(no 'get ready' is sent for Error/Fail, so no 'stand down' either)
+		if(command != RunControlStateMachine::ERROR_TRANSITION_NAME &&
+		   command != RunControlStateMachine::FAIL_TRANSITION_NAME)
+			sendStandDownForTransition(
+			    command, reply == command + "Done" /*transitionCompleted*/);
+		reportSupervisorsNotReadyForTransition();
 	}
 	catch(...)
 	{
@@ -6893,6 +7156,11 @@ bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 		if(holdingSemaphore)
 			stateMachineSemaphore_.give();
 		stateMachineWorkLoopManager_.report(workLoop, "Fault", 100, true);
+
+		if(command != "" && command != RunControlStateMachine::ERROR_TRANSITION_NAME &&
+		   command != RunControlStateMachine::FAIL_TRANSITION_NAME)
+			sendStandDownForTransition(command, false /*transitionCompleted*/);
+		reportSupervisorsNotReadyForTransition();
 	}
 	return false;  // execute once and automatically remove the workloop so in
 	               // WorkLoopManager the try workLoop->remove(job_) could be commented
@@ -8307,6 +8575,9 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	//the others are halted; now fail if a supervisor was not ready for this transition
+	throwIfSupervisorsWereNotReadyForTransition();
+
 	if(doLogIntermediate)
 		makeSystemLogEntry("System halted.");
 
@@ -8421,9 +8692,10 @@ try
 		makeSystemLogEntry("System shutting down.");
 	RunControlStateMachine::theProgressBar_.step();
 
-	// kill all non-gateway contexts
+	// kill all non-gateway contexts (use live hostnames, not the active Context table,
+	// so Shutdown still works after Contexts are added or removed since launch)
 	GatewaySupervisor::launchStartOTSCommand(
-	    "OTS_APP_SHUTDOWN", CorePropertySupervisorBase::theConfigurationManager_);
+	    "OTS_APP_SHUTDOWN", getLiveContextHostnames());
 	RunControlStateMachine::theProgressBar_.step();
 
 	// important to give time for StartOTS script to recognize command (before user does
@@ -8435,6 +8707,9 @@ try
 	}
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
+
+	//the others are shut down; now fail if a supervisor was not ready for this transition
+	throwIfSupervisorsWereNotReadyForTransition();
 
 	if(doLogIntermediate)
 		makeSystemLogEntry("System shutdown complete.");
@@ -8517,12 +8792,58 @@ try
 	//	configuration manager (done by launchStartOTSCommand, which also rewrites the
 	//	XDAQ context XML), then restart the threads from the reloaded GatewaySupervisorTable
 	//	and reload request permissions (supervisor properties) as part of the transition.
+	//
+	// Startup is the constructor moment for the list of apps: while the threads are
+	//	stopped, the list of apps (allSupervisorInfo_) is rebuilt from the active Context,
+	//	so contexts and apps added or removed since launch take hold here. That list and
+	//	the app set for transitions then stay fixed until the next Startup.
+	std::vector<std::string> hostnamesNewToContext;
 	stopBackgroundWorkLoops();
 	try
 	{
+		// hosts with a launch script running, as of the previous list of apps
+		const std::vector<std::string> previousHostnames = getLiveContextHostnames();
+
 		// start all non-gateway contexts
+		std::vector<std::string> ignoredHostnames;
 		GatewaySupervisor::launchStartOTSCommand(
-		    "OTS_APP_STARTUP", CorePropertySupervisorBase::theConfigurationManager_);
+		    "OTS_APP_STARTUP",
+		    CorePropertySupervisorBase::theConfigurationManager_,
+		    &ignoredHostnames);
+
+		for(const auto& ignoredHostname : ignoredHostnames)
+		{
+			if(std::find(previousHostnames.begin(),
+			             previousHostnames.end(),
+			             ignoredHostname) != previousHostnames.end())
+			{
+				__SS__ << "The command 'OTS_APP_STARTUP' looks to have been ignored by "
+				       << ignoredHostname
+				       << ". Is the ots launch script still running on that node?"
+				       << " Try 'ots -a' on " << ignoredHostname
+				       << " to restart the action handler without restarting xdaq "
+				          "processes."
+				       << __E__;
+				__SS_THROW__;
+			}
+
+			// a host that is new to the active Context has no launch script yet
+			hostnamesNewToContext.push_back(ignoredHostname);
+			__COUT_WARN__
+			    << "Host '" << ignoredHostname
+			    << "' is new to the active Context and has no ots launch script "
+			       "running yet. The launch script on the Gateway host starts it by ssh "
+			       "(unless remote launch was disabled, e.g. 'ots -s'; then start ots "
+			       "on that host by hand)."
+			    << __E__;
+		}
+
+		{
+			// no request or state machine command may use the list of apps during the rebuild
+			std::lock_guard<std::mutex> lock(stateMachineAccessMutex_);
+			localAllSupervisorInfo_.clear();
+			allSupervisorInfo_.rebuildFromActiveContext(getApplicationContext());
+		}
 	}
 	catch(...)
 	{
@@ -8531,15 +8852,18 @@ try
 	}
 	startBackgroundWorkLoops();
 	CorePropertySupervisorBase::reloadSupervisorProperties();
+
 	__COUT_INFO__
-	    << "Gateway UDP/app-status work loops restarted and request permissions "
-	       "reloaded from the active Context group."
+	    << "List of apps rebuilt, Gateway UDP/app-status work loops restarted, and "
+	       "request permissions reloaded from the active Context group."
 	    << __E__;
 	RunControlStateMachine::theProgressBar_.step();
 
 	// important to give time for StartOTS script to recognize command and for apps to
 	// instantiate things (before user does Initialize)
-	for(int i = 0; i < 10; ++i)
+	//	(a host new to the Context needs longer: ssh, environment setup, then launch)
+	const int startupWaitSeconds = hostnamesNewToContext.empty() ? 10 : 30;
+	for(int i = 0; i < startupWaitSeconds; ++i)
 	{
 		sleep(1);
 		RunControlStateMachine::theProgressBar_.step();
@@ -15431,8 +15755,16 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 ///	tree (e.g. mid-transition). For commands that only act on the processes
 ///	already running (LOG_ROLLOVER), use the hostname-list overload with
 ///	getLiveContextHostnames() instead.
-void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
-                                              ConfigurationManager* cfgMgr)
+///
+///	The launch script reads the context layout from its own copy of the XDAQ run xml
+///	(ots.xml). That copy is renewed here, before any script is commanded, so the scripts
+///	on all hosts launch the active Context and none reads the copy while it is written.
+///
+///	If ignoredHostnames is given, hosts that did not consume the command are returned
+///	there instead of throwing (e.g. a host that is new to the Context has no script yet).
+void GatewaySupervisor::launchStartOTSCommand(const std::string&        command,
+                                              ConfigurationManager*     cfgMgr,
+                                              std::vector<std::string>* ignoredHostnames)
 {
 	__COUT__ << "launch ots script Command = " << command << __E__;
 	__COUT__ << "Extracting target context hostnames... " << __E__;
@@ -15468,7 +15800,33 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 		__SS_THROW__;
 	}
 
-	launchStartOTSCommand(command, hostnames);
+	// renew the launch script's copy of the XDAQ run xml
+	//	(cfgMgr->init() above just rewrote the run xml from the active Context)
+	{
+		const std::string runXmlFilename =
+		    std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) + "/" +
+		    std::string(__ENV__("XDAQ_CONFIGURATION_XML")) + ".xml";
+		const std::string launchScriptXmlFilename =
+		    std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) +
+		    "/ots.xml";  // must match XDAQ_OTS_XML in the ots launch script
+
+		std::ifstream runXmlFile(runXmlFilename, std::ios::binary);
+		std::ofstream launchScriptXmlFile(launchScriptXmlFilename,
+		                                  std::ios::binary | std::ios::trunc);
+		if(runXmlFile.fail() || launchScriptXmlFile.fail())
+		{
+			__SS__ << "Launch of command '" << command << "' interrupted! "
+			       << "Could not copy '" << runXmlFilename << "' to '"
+			       << launchScriptXmlFilename << "' for the ots launch script." << __E__;
+			__SS_THROW__;
+		}
+		launchScriptXmlFile << runXmlFile.rdbuf();
+		launchScriptXmlFile.close();
+		__COUT__ << "Copied '" << runXmlFilename << "' to '" << launchScriptXmlFilename
+		         << "' for the ots launch script." << __E__;
+	}
+
+	launchStartOTSCommand(command, hostnames, ignoredHostnames);
 }  // end launchStartOTSCommand(cfgMgr)
 
 //==============================================================================
@@ -15476,8 +15834,11 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 ///	Write the command to the ots launch script's action file on each named host,
 ///	then verify each script consumed it. Does not touch the ConfigurationManager.
 ///	throws exception if command fails to start
+///	(unless ignoredHostnames is given, then the hosts that ignored the command are
+///	returned there and their command file is cleared)
 void GatewaySupervisor::launchStartOTSCommand(const std::string&              command,
-                                              const std::vector<std::string>& hostnames)
+                                              const std::vector<std::string>& hostnames,
+                                              std::vector<std::string>* ignoredHostnames)
 {
 	if(hostnames.empty())
 	{
@@ -15523,6 +15884,19 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&              co
 
 			if(strncmp(line, command.c_str(), 90) == 0)
 			{
+				if(ignoredHostnames)
+				{
+					// let the caller decide; do not leave the command for a script started later
+					ignoredHostnames->push_back(hostname);
+					FILE* clearFilePointer = fopen(fn.c_str(), "w");
+					if(clearFilePointer)
+					{
+						fprintf(clearFilePointer, "0");
+						fclose(clearFilePointer);
+					}
+					continue;
+				}
+
 				__SS__
 				    << "The command '" << command << "' looks to have been ignored by "
 				    << hostname

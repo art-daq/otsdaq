@@ -3,6 +3,8 @@
 
 #include <map>
 #include <mutex> /* for recursive_mutex */
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "otsdaq/SupervisorInfo/SupervisorDescriptorInfoBase.h"
@@ -11,6 +13,8 @@
 // clang-format off
 namespace ots
 {
+class XDAQContextTable;
+
 ////// type define AllSupervisorInfoMap
 typedef std::map<unsigned int, const SupervisorInfo&> SupervisorInfoMap;
 
@@ -36,6 +40,7 @@ class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 
 	void 													init								(xdaq::ApplicationContext* applicationContext);
 	void 													destroy								(void);
+	void 													rebuildFromActiveContext			(xdaq::ApplicationContext* applicationContext); ///<Gateway only, at Startup: register apps new to the active Context, drop the ones that left, rebuild the lists
 
 	/// BOOLs
 	bool 													isWizardMode						(void) const { return theWizardInfo_ ? true : false; }
@@ -64,7 +69,17 @@ class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 
 	std::vector<std::vector<const SupervisorInfo*>> 		getOrderedSupervisorDescriptors		(const std::string& stateMachineCommand, bool onlyGatewayContextSupervisors = false) const;
 	std::recursive_mutex&									getSupervisorInfoMutex				(unsigned int lid) { return allSupervisorInfoMutex_[lid]; }
+
+	void 													establishStateMachineApplicationSet	(void);
   private:
+	typedef std::vector<std::pair<unsigned int /*appId*/, std::map<std::string /*FSM command*/, uint8_t /*priority*/>>> StateMachineApplicationSet;
+	static StateMachineApplicationSet							extractStateMachineApplicationSet	(const XDAQContextTable* contextTable);
+	void 														organizeSupervisors					(const XDAQContextTable* contextConfig); ///<builds the lists from SupervisorDescriptorInfoBase::allSupervisors_
+
+	StateMachineApplicationSet 									stateMachineApplicationSet_; ///<apps targeted by state machine transitions; set at launch and at each Startup (with the rest of the lists), not when a Context group is activated
+	bool 														stateMachineApplicationSetEstablished_ = false;
+	mutable std::mutex 											stateMachineApplicationSetMutex_;
+
 	SupervisorInfo* 											theSupervisorInfo_;
 	SupervisorInfo* 											theWizardInfo_;
 	SupervisorInfo* 											theARTDAQSupervisorInfo_;

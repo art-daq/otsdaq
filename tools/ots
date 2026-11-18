@@ -188,6 +188,7 @@ FIREFOX=0
 BACKUPLOGS=0
 RELAUNCHCHECK=1
 REMOTELAUNCH=1
+REMOTELAUNCH_NEW_HOSTS_ONLY=0 #set during OTS_APP_STARTUP: ssh remote start only for hosts that are new to the Context
 ISREMOTE=0
 ISACTIONONLY=0
 MACROMAKER_MODE=0
@@ -2121,6 +2122,9 @@ launchOTS() {
 			out "${Purple}${REV} *******    Launching ots Non-gateway Apps!    ******* ${RstClr}"
 
 			#copy once in NON-GATEWAY launch if file not already created (by GATEWAY launch copy)
+			# Note: at Startup (OTS_APP_STARTUP) the Gateway renews this copy from the active Context
+			#	before it commands the scripts (GatewaySupervisor::launchStartOTSCommand), so the
+			#	contexts launched below are the ones of the active Context.
 			if [ ! -f ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml ]; then
 				cp ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_CONFIGURATION_XML}.xml ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml
 			fi
@@ -2601,6 +2605,22 @@ launchOTS() {
 		fi
 	done < ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml
 
+	# names of one machine written two ways (mu2e-cfo-01 vs mu2e-cfo-01.fnal.gov) count as two hosts:
+	# the short one is ssh-launched, and that ots kills this host's contexts (including the Gateway) at startup
+	if [ $ISREMOTE == 0 ]; then
+		uniqueHostnames=()
+		for contextHost in "${THIS_HOST}" "${contextHostname[@]}"; do
+			[[ " ${uniqueHostnames[*]} " == *" ${contextHost} "* ]] || uniqueHostnames+=("${contextHost}")
+		done
+		for (( i=0; i<${#uniqueHostnames[@]}; i++ )); do
+			for (( j=i+1; j<${#uniqueHostnames[@]}; j++ )); do
+				if [[ "${uniqueHostnames[$i]%%.*}" == "${uniqueHostnames[$j]%%.*}" ]]; then
+					warning "Context host names '${uniqueHostnames[$i]}' and '${uniqueHostnames[$j]}' differ only by domain name, but ots treats them as different hosts (this host is '${THIS_HOST}'). If they are the same machine, a second ots is launched there by ssh and kills this host's contexts, including the Gateway. Write the context Address the same way in the XDAQContextTable."
+				fi
+			done
+		done
+	fi
+
 
 	####################################################################
 	########### 		launch non-Gateway contexts 		############
@@ -2895,10 +2915,16 @@ launchOTS() {
 
 		remoteHostCount=$((${#contextHostname[@]} -1 - ${#xdaqPort[@]}))
 
-		unset remoteLaunchHosts
+		if [[ $REMOTELAUNCH_NEW_HOSTS_ONLY == 1 ]]; then
+			#keep remoteLaunchHosts, so only hosts without an ots script running are started
+			out #blank line
+			info "Checking for remote hosts that are new to the Context (to disable remote start, use ots -s)...${RstClr}"
+		else
+			unset remoteLaunchHosts
 
-		out #blank line
-		info "Launching ${remoteHostCount} remote host otsdaq Context procesess (to disable remote start, use ots -s)...${RstClr}"
+			out #blank line
+			info "Launching ${remoteHostCount} remote host otsdaq Context procesess (to disable remote start, use ots -s)...${RstClr}"
+		fi
 
 		for host in "${contextHostname[@]}"
 		do
@@ -5689,11 +5715,12 @@ otsActionHandler() {
 			out "self-pid=${BASHPID}: Starting up non-gateway contexts..."
 			out " "
 
-			#prevent remote ssh launches
-			TMP_REMOTELAUNCH=$REMOTELAUNCH
-			REMOTELAUNCH=0
+			#prevent remote ssh launches to hosts that already have an ots script running (they
+			#	got this same command); a host that is new to the Context has no script yet, so
+			#	it is still started by ssh (only if remote launch is enabled for this script)
+			REMOTELAUNCH_NEW_HOSTS_ONLY=1
 			launchOTS nongateway #launch all non-gateway apps
-			REMOTELAUNCH=$TMP_REMOTELAUNCH
+			REMOTELAUNCH_NEW_HOSTS_ONLY=0
 
 		elif [ "$OTSDAQ_STARTOTS_ACTION" == "LAUNCH_WIZ" ]; then
 
@@ -7016,11 +7043,11 @@ otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
 ACTION_HANDLER_PID=$!
 out "Action handler (pid = ${ACTION_HANDLER_PID}) log is here:"
 out "       ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
-if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
+if [ $ISREMOTE == 0 ] && [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
 	out "MacroMaker UDP Remote Control at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
 	out "       at terminal: ${Bold}ots_mm_udp_test${RstClr} ${OTS_MACROMAKER_UDP_IP} ${OTS_MACROMAKER_UDP_PORT}"
 fi
-if [ "x$OTS_CONFIG_UDP_IP" != "x" ] && [ "x$OTS_CONFIG_UDP_PORT" != "x" ]; then
+if [ $ISREMOTE == 0 ] && [ "x$OTS_CONFIG_UDP_IP" != "x" ] && [ "x$OTS_CONFIG_UDP_PORT" != "x" ]; then
 	out "ConfigurationGUI UDP Remote Control at ${Bold}${OTS_CONFIG_UDP_IP}:${OTS_CONFIG_UDP_PORT}${RstClr} (\$OTS_CONFIG_UDP_IP : \$OTS_CONFIG_UDP_PORT)"
 	out "       at terminal: ${Bold}ots_cfg_udp_test${RstClr} ${OTS_CONFIG_UDP_IP} ${OTS_CONFIG_UDP_PORT}"
 fi

@@ -27,8 +27,10 @@
 #include <xoap/Method.h>
 
 #include <time.h>
+#include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string> /*string and to_string*/
 #include <vector>
@@ -104,6 +106,20 @@ class CoreSupervisorBase : public xdaq::Application,
 	virtual xoap::MessageReference 	applicationStatusRequest		(xoap::MessageReference message);
 	xoap::MessageReference 			minReadyForEventGenerationStartIterationRequest(xoap::MessageReference message);
 
+	/// System transition notice from the Gateway Supervisor:
+	///	before every transition the Gateway sends "GetReady" (are you ready for <transition>?),
+	///	and after the transition it sends "StandDown" (<transition> completed or failed).
+	///	The base class only stores the information; each supervisor may use
+	///	isSystemTransitionInProgress() however it wants (e.g., to avoid lockups).
+	xoap::MessageReference 			systemTransitionNotice			(xoap::MessageReference message);
+	bool 							isSystemTransitionInProgress	(void) const { return systemTransitionInProgress_; }
+	std::string 					getSystemTransitionName			(void) const;
+	/// override to answer "not ready" to the Gateway (the Gateway asks again once per second,
+	///	and after 8 seconds refuses the transition and reports this supervisor to the user)
+	virtual bool 					isReadyForSystemTransition		(const std::string& /*transitionName*/, std::string& /*notReadyReason*/) { return true; }
+
+	static const std::string SYSTEM_TRANSITION_NOTICE_COMMAND, SYSTEM_TRANSITION_NOTICE_GET_READY, SYSTEM_TRANSITION_NOTICE_STAND_DOWN;
+
 	bool 							stateMachineThread				(toolbox::task::WorkLoop* workLoop);
 
 	virtual void 					stateInitial					(toolbox::fsm::FiniteStateMachine& fsm);
@@ -156,6 +172,11 @@ class CoreSupervisorBase : public xdaq::Application,
 	void              postStateMachineExecutionLoop(void);
 
 	RemoteWebUsers 				theRemoteWebUsers_;
+
+	/// set by the Gateway's "GetReady" notice and cleared by its "StandDown" notice
+	std::atomic<bool> 			systemTransitionInProgress_{false};
+	mutable std::mutex 			systemTransitionMutex_;  ///< protects systemTransitionName_
+	std::string 				systemTransitionName_;
 
 };
 // clang-format on

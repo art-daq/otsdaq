@@ -11,6 +11,10 @@ using namespace ots;
 const std::string CoreSupervisorBase::WORK_LOOP_DONE    = "Done";
 const std::string CoreSupervisorBase::WORK_LOOP_WORKING = "Working";
 
+const std::string CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_COMMAND    = "SystemTransitionNotice";
+const std::string CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_GET_READY  = "GetReady";
+const std::string CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_STAND_DOWN = "StandDown";
+
 //==============================================================================
 CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
     : xdaq::Application(stub)
@@ -53,6 +57,10 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
 	xoap::bind(this,
 	           &CoreSupervisorBase::applicationStatusRequest,
 	           "ApplicationStatusRequest",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &CoreSupervisorBase::systemTransitionNotice,
+	           CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_COMMAND,
 	           XDAQ_NS_URI);
 	xoap::bind(this,
 	           &CoreSupervisorBase::TRACESupervisorRequest,
@@ -533,6 +541,90 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 	return SOAPUtilities::makeSOAPMessageReference("applicationStatusRequestReply",
 	                                               retParameters);
 }  // end applicationStatusRequest()
+
+//==============================================================================
+/// systemTransitionNotice
+///	Handles the Gateway Supervisor's notice sent around every transition:
+///		Notice = GetReady  : "get ready for <Transition> - are you ready?"
+///		Notice = StandDown : "stand down - <Transition> <Result>" (completed or failed)
+///	The reply has Ready ("1" or "0") and Reason (why not ready).
+xoap::MessageReference CoreSupervisorBase::systemTransitionNotice(
+    xoap::MessageReference message)
+{
+	SOAPParameters parameters;
+	parameters.addParameter("Notice");
+	parameters.addParameter("Transition");
+	parameters.addParameter("Result");
+	SOAPUtilities::receive(message, parameters);
+
+	const std::string notice         = parameters.getValue("Notice");
+	const std::string transitionName = parameters.getValue("Transition");
+	const std::string result         = parameters.getValue("Result");
+
+	bool        isReady = true;
+	std::string notReadyReason;
+
+	if(notice == CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_GET_READY)
+	{
+		try
+		{
+			isReady = isReadyForSystemTransition(transitionName, notReadyReason);
+		}
+		catch(const std::exception& e)
+		{
+			isReady        = false;
+			notReadyReason = e.what();
+		}
+		catch(...)
+		{
+			isReady        = false;
+			notReadyReason = "Unknown exception while checking if ready.";
+		}
+
+		if(isReady)
+		{
+			{
+				std::lock_guard<std::mutex> lock(systemTransitionMutex_);
+				systemTransitionName_ = transitionName;
+			}
+			systemTransitionInProgress_ = true;
+			__SUP_COUT__ << "Get ready for system transition '" << transitionName
+			             << "' - ready." << __E__;
+		}
+		else
+			__SUP_COUT_WARN__ << "Get ready for system transition '" << transitionName
+			                  << "' - NOT ready: " << notReadyReason << __E__;
+	}
+	else if(notice == CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_STAND_DOWN)
+	{
+		systemTransitionInProgress_ = false;
+		{
+			std::lock_guard<std::mutex> lock(systemTransitionMutex_);
+			systemTransitionName_ = "";
+		}
+		__SUP_COUT__ << "Stand down - system transition '" << transitionName << "' "
+		             << result << "." << __E__;
+	}
+	else
+	{
+		isReady        = false;
+		notReadyReason = "Unrecognized system transition notice '" + notice + ".'";
+		__SUP_COUT_WARN__ << notReadyReason << __E__;
+	}
+
+	SOAPParameters retParameters;
+	retParameters.addParameter("Ready", isReady ? "1" : "0");
+	retParameters.addParameter("Reason", notReadyReason);
+	return SOAPUtilities::makeSOAPMessageReference(
+	    CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_COMMAND + "Reply", retParameters);
+}  // end systemTransitionNotice()
+
+//==============================================================================
+std::string CoreSupervisorBase::getSystemTransitionName(void) const
+{
+	std::lock_guard<std::mutex> lock(systemTransitionMutex_);
+	return systemTransitionName_;
+}  // end getSystemTransitionName()
 
 //==============================================================================
 xoap::MessageReference

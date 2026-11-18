@@ -6,7 +6,14 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
+#ifndef OTS_LITE
+#include <xdaq/ApplicationDescriptorFactory.h>
+#include <xdaq/ApplicationDescriptorImpl.h>
+#include <xdaq/ContextTable.h>
+#endif
+
 #include <iostream>
+#include <set>
 
 using namespace ots;
 
@@ -37,9 +44,19 @@ AllSupervisorInfo::~AllSupervisorInfo(void) { destroy(); }
 //==============================================================================
 void AllSupervisorInfo::destroy(void)
 {
-	allSupervisorInfo_.clear();
+	// clear the maps of references before the map that owns the entries
+	allTraceControllerSupervisorInfo_.clear();
 	allFETypeSupervisorInfo_.clear();
 	allDMTypeSupervisorInfo_.clear();
+	allLogbookTypeSupervisorInfo_.clear();
+	allMacroMakerTypeSupervisorInfo_.clear();
+	allSupervisorInfo_.clear();
+
+	{
+		std::lock_guard<std::mutex> lock(stateMachineApplicationSetMutex_);
+		stateMachineApplicationSet_.clear();
+		stateMachineApplicationSetEstablished_ = false;
+	}
 
 	theSupervisorInfo_       = nullptr;
 	theWizardInfo_           = nullptr;
@@ -125,6 +142,27 @@ void AllSupervisorInfo::init(xdaq::ApplicationContext* applicationContext)
 	        ? nullptr
 	        : cfgMgr->__GET_CONFIG__(XDAQContextTable);
 	//__COUTV__(contextConfig);
+
+	organizeSupervisors(contextConfig);
+}  // end init()
+
+//==============================================================================
+/// organizeSupervisors
+///	Builds allSupervisorInfo_ and the per-type maps from the descriptors in
+///	SupervisorDescriptorInfoBase::allSupervisors_. contextConfig is the active Context
+///	table (nullptr in wizard and MacroMaker mode). Called by init() at construction and
+///	by rebuildFromActiveContext() at Startup.
+void AllSupervisorInfo::organizeSupervisors(const XDAQContextTable* contextConfig)
+{
+	auto allDescriptors = SupervisorDescriptorInfoBase::getAllDescriptors();
+
+	// at launch and at each Startup, the app set for state machine transitions is the active Context
+	if(contextConfig)
+	{
+		std::lock_guard<std::mutex> lock(stateMachineApplicationSetMutex_);
+		stateMachineApplicationSet_ = extractStateMachineApplicationSet(contextConfig);
+		stateMachineApplicationSetEstablished_ = true;
+	}
 
 	// For TRACE controllers in normal mode, temporarily make a map by hostname of supervisors
 	// std::map<std::string /*hostname*/,std::pair<unsigned int, SupervisorInfo>> TRACEAppMap;
@@ -335,7 +373,212 @@ void AllSupervisorInfo::init(xdaq::ApplicationContext* applicationContext)
 
 	// for debugging
 	// getOrderedSupervisorDescriptors("Configure");
-}  // end init()
+}  // end organizeSupervisors()
+
+//==============================================================================
+/// rebuildFromActiveContext
+///	Startup is the constructor moment for the list of apps: the Gateway calls this at
+///	Startup so the active Context fully takes hold without relaunching the Gateway.
+///
+///	Steps:
+///	  1. every enabled app of the active Context that this process has no XDAQ
+///	     descriptor for is registered (the same calls XDAQ makes when it loads the
+///	     context xml at process start)
+///	  2. descriptors of apps that are no longer enabled in the active Context are left
+///	     out (XDAQ cannot remove a descriptor); apps living in this process are always kept
+///	  3. allSupervisorInfo_ and the per-type maps are rebuilt, and the app set for state
+///	     machine transitions is taken from the same Context
+///
+///	The caller must make sure no other thread is using allSupervisorInfo_ (entries are
+///	destroyed and recreated). Apps added to this process' own context cannot be created
+///	here; that still needs a total restart.
+void AllSupervisorInfo::rebuildFromActiveContext(
+    xdaq::ApplicationContext* applicationContext)
+{
+	if(!theSupervisorInfo_ || AllSupervisorInfo::MACROMAKER_MODE)
+	{
+		__SS__ << "The list of apps can only be rebuilt from the active Context by a "
+		          "Gateway Supervisor in normal mode."
+		       << __E__;
+		__SS_THROW__;
+	}
+
+	__COUT__ << "Rebuilding info from the active Context..." << __E__;
+
+	ConfigurationManager    cfgMgr(false /* initForWriteAccess */,
+	                               false /* doInitializeFromFhicl */,
+	                               true /* forceNotFirstInContext */);
+	const XDAQContextTable* contextConfig = cfgMgr.__GET_CONFIG__(XDAQContextTable);
+
+	const std::string ownContextUrl = applicationContext->getContextDescriptor()->getURL();
+
+	// Step 1. register the apps of the active Context that are not known to this process
+	{
+		auto registeredDescriptors =
+		    applicationContext->getDefaultZone()
+		        ->getApplicationGroup("daq")
+		        ->getApplicationDescriptors();
+
+		for(const auto& context : contextConfig->getContexts())
+		{
+			if(!context.status_)
+				continue;
+
+			const std::string contextUrl =
+			    context.address_ + ":" + std::to_string(context.port_);
+
+			for(const auto& app : context.applications_)
+			{
+				if(!app.status_)
+					continue;
+
+				bool alreadyRegistered = false;
+				for(const auto& registeredDescriptor : registeredDescriptors)
+					if(registeredDescriptor->getLocalId() == app.id_ &&
+					   registeredDescriptor->getContextDescriptor()->getURL() ==
+					       contextUrl)
+					{
+						alreadyRegistered = true;
+						if(registeredDescriptor->getClassName() != app.class_)
+							__COUT_WARN__
+							    << "App '" << app.applicationUID_ << "' LID " << app.id_
+							    << " at " << contextUrl << " changed class from "
+							    << registeredDescriptor->getClassName() << " to "
+							    << app.class_
+							    << " in the active Context. The Gateway keeps the old "
+							       "class until a total restart of ots."
+							    << __E__;
+						break;
+					}
+				if(alreadyRegistered)
+					continue;
+
+				if(contextUrl == ownContextUrl)
+				{
+					__COUT_WARN__
+					    << "App '" << app.applicationUID_ << "' LID " << app.id_
+					    << " was added to the Gateway's own context '"
+					    << context.contextUID_
+					    << ".' It can not be created at Startup; a total restart of "
+					       "ots is needed for it."
+					    << __E__;
+					continue;
+				}
+
+				__COUT_INFO__ << "Registering app '" << app.applicationUID_ << "' LID "
+				              << app.id_ << " class " << app.class_ << " at "
+				              << contextUrl << " from the active Context." << __E__;
+				try
+				{
+#ifdef OTS_LITE
+					applicationContext->addRemoteApplication(
+					    app.class_, app.id_, app.instance_, contextUrl);
+#else
+					xdaq::ContextTable* xdaqContextTable = const_cast<xdaq::ContextTable*>(
+					    applicationContext->getContextTable());
+					const xdaq::ContextDescriptor* contextDescriptor =
+					    xdaqContextTable->hasContextDescriptor(contextUrl)
+					        ? xdaqContextTable->getContextDescriptor(contextUrl)
+					        : xdaqContextTable->createContextDescriptor(contextUrl);
+
+					std::set<std::string> zoneNames{
+					    applicationContext->getDefaultZoneName()};
+					std::set<std::string> groupNames{"daq"};
+					xdaq::ApplicationDescriptorImpl* applicationDescriptor =
+					    xdaq::ApplicationDescriptorFactory::getInstance()
+					        ->createApplicationDescriptor(contextDescriptor,
+					                                      app.class_,
+					                                      app.id_,
+					                                      zoneNames,
+					                                      groupNames);
+					applicationDescriptor->setInstance(app.instance_);
+#endif
+				}
+				catch(const std::exception& e)
+				{
+					__SS__ << "Failed to register app '" << app.applicationUID_
+					       << "' LID " << app.id_ << " at " << contextUrl
+					       << " from the active Context: " << e.what() << __E__;
+					__SS_THROW__;
+				}
+			}
+		}
+	}  // end Step 1
+
+	// Step 2. take the descriptors that are part of the active Context
+	//	(checked for duplicate IDs before the current list is touched)
+	SupervisorDescriptors activeDescriptors;
+	{
+		auto registeredDescriptors =
+		    applicationContext->getDefaultZone()
+		        ->getApplicationGroup("daq")
+		        ->getApplicationDescriptors();
+
+		for(const auto& registeredDescriptor : registeredDescriptors)
+		{
+			const std::string contextUrl =
+			    registeredDescriptor->getContextDescriptor()->getURL();
+
+			// apps living in this process exist no matter what the Context says
+			if(contextUrl != ownContextUrl &&
+			   contextConfig->getApplicationUID(contextUrl,
+			                                    registeredDescriptor->getLocalId()) == "")
+			{
+				__COUT__ << "Leaving out app LID " << registeredDescriptor->getLocalId()
+				         << " class " << registeredDescriptor->getClassName() << " at "
+				         << contextUrl
+				         << " because it is not enabled in the active Context." << __E__;
+				continue;
+			}
+
+			if(!activeDescriptors
+			        .emplace(registeredDescriptor->getLocalId(), registeredDescriptor)
+			        .second)
+			{
+				__SS__ << "Error! Duplicate Application IDs are not allowed. ID ="
+				       << registeredDescriptor->getLocalId()
+				       << ". Note that an app added to the active Context may not reuse "
+				          "the ID of an app in the Gateway's own context."
+				       << __E__;
+				__SS_THROW__;
+			}
+		}
+	}  // end Step 2
+
+	// Step 3. rebuild
+	SupervisorDescriptors previousDescriptors;
+	for(const auto& supervisorInfoPair : allSupervisorInfo_)
+		previousDescriptors.emplace(supervisorInfoPair.first,
+		                            supervisorInfoPair.second.getDescriptor());
+	try
+	{
+		AllSupervisorInfo::destroy();
+		allSupervisors_ = activeDescriptors;
+		organizeSupervisors(contextConfig);
+	}
+	catch(...)
+	{
+		__COUT_ERR__ << "Rebuilding info from the active Context failed; going back "
+		                "to the previous list of apps."
+		             << __E__;
+		try
+		{
+			AllSupervisorInfo::destroy();
+			allSupervisors_ = previousDescriptors;
+			organizeSupervisors(contextConfig);
+		}
+		catch(...)
+		{
+			__COUT_ERR__ << "Going back to the previous list of apps also failed. A "
+			                "total restart of ots is needed."
+			             << __E__;
+		}
+		throw;
+	}
+
+	__COUT_INFO__ << "Rebuilt info from the active Context: " << allSupervisorInfo_.size()
+	              << " apps." << __E__;
+}  // end rebuildFromActiveContext()
 
 //==============================================================================
 const SupervisorInfo& AllSupervisorInfo::getSupervisorInfo(xdaq::Application* app) const
@@ -496,6 +739,43 @@ const SupervisorInfo& AllSupervisorInfo::getArtdaqSupervisorInfo(void) const
 }  // end getArtdaqSupervisorInfo()
 
 //==============================================================================
+/// extractStateMachineApplicationSet
+///	Returns the enabled apps of the enabled contexts, in table order, with their
+///	state machine command priorities.
+AllSupervisorInfo::StateMachineApplicationSet
+AllSupervisorInfo::extractStateMachineApplicationSet(const XDAQContextTable* contextTable)
+{
+	StateMachineApplicationSet stateMachineApplicationSet;
+	for(const auto& context : contextTable->getContexts())
+		if(context.status_)
+			for(const auto& app : context.applications_)
+				if(app.status_)
+					stateMachineApplicationSet.push_back(
+					    std::make_pair(app.id_, app.stateMachineCommandPriority_));
+	return stateMachineApplicationSet;
+}  // end extractStateMachineApplicationSet()
+
+//==============================================================================
+/// establishStateMachineApplicationSet
+///	Takes the set of apps for state machine transitions from the currently active
+///	Context. The Gateway calls this at Startup; the set then stays fixed until the
+///	next Startup, no matter which Context group is activated in between.
+void AllSupervisorInfo::establishStateMachineApplicationSet(void)
+{
+	ConfigurationManager       cfgMgr;
+	StateMachineApplicationSet stateMachineApplicationSet =
+	    extractStateMachineApplicationSet(cfgMgr.__GET_CONFIG__(XDAQContextTable));
+
+	__COUT__ << "Established state machine application set of "
+	         << stateMachineApplicationSet.size() << " apps from the active Context."
+	         << __E__;
+
+	std::lock_guard<std::mutex> lock(stateMachineApplicationSetMutex_);
+	stateMachineApplicationSet_            = stateMachineApplicationSet;
+	stateMachineApplicationSetEstablished_ = true;
+}  // end establishStateMachineApplicationSet()
+
+//==============================================================================
 std::vector<std::vector<const SupervisorInfo*>>
 AllSupervisorInfo::getOrderedSupervisorDescriptors(
     const std::string& stateMachineCommand, bool onlyGatewayContextSupervisors) const
@@ -506,42 +786,51 @@ AllSupervisorInfo::getOrderedSupervisorDescriptors(
 	std::map<uint64_t /*priority*/, std::vector<unsigned int /*appId*/>>
 	    orderedByPriority;
 
-	try
+	// use the app set established at launch or at the last Startup, so that a Context
+	// group activated in between does not change the targets of state machine transitions
+	StateMachineApplicationSet stateMachineApplicationSet;
+	bool                       stateMachineApplicationSetEstablished;
 	{
-		ConfigurationManager                              cfgMgr;
-		const std::vector<XDAQContextTable::XDAQContext>& contexts =
-		    cfgMgr.__GET_CONFIG__(XDAQContextTable)->getContexts();
-
-		for(const auto& context : contexts)
-			if(context.status_)
-				for(const auto& app : context.applications_)
-				{
-					if(!app.status_)
-						continue;  // skip disabled apps
-
-					auto it = app.stateMachineCommandPriority_.find(stateMachineCommand);
-					if(it == app.stateMachineCommandPriority_.end())
-						orderedByPriority
-						    [XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY]
-						        .push_back(app.id_);  // if no priority, then default to
-					// XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
-					else  // take value, and do not allow DEFAULT value of 0 -> force to
-					      // XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
-						orderedByPriority[it->second ? it->second
-						                             : XDAQContextTable::XDAQApplication::
-						                                   DEFAULT_PRIORITY]
-						    .push_back(app.id_);
-
-					//__COUT__ << "app.id_ " << app.id_ << __E__;
-				}
+		std::lock_guard<std::mutex> lock(stateMachineApplicationSetMutex_);
+		stateMachineApplicationSet            = stateMachineApplicationSet_;
+		stateMachineApplicationSetEstablished = stateMachineApplicationSetEstablished_;
 	}
-	catch(...)
+
+	if(!stateMachineApplicationSetEstablished)
 	{
-		__COUT_ERR__ << "SupervisorDescriptorInfoBase could not access the XDAQ Context "
-		                "and Application configuration through the Context Table "
-		                "Group."
-		             << __E__;
-		throw;
+		__COUT_WARN__ << "No state machine application set was established, so the "
+		                 "currently active Context is used for command "
+		              << stateMachineCommand << __E__;
+		try
+		{
+			ConfigurationManager cfgMgr;
+			stateMachineApplicationSet = extractStateMachineApplicationSet(
+			    cfgMgr.__GET_CONFIG__(XDAQContextTable));
+		}
+		catch(...)
+		{
+			__COUT_ERR__
+			    << "SupervisorDescriptorInfoBase could not access the XDAQ Context "
+			       "and Application configuration through the Context Table "
+			       "Group."
+			    << __E__;
+			throw;
+		}
+	}
+
+	for(const auto& applicationPriorities : stateMachineApplicationSet)
+	{
+		auto it = applicationPriorities.second.find(stateMachineCommand);
+		if(it == applicationPriorities.second.end())
+			orderedByPriority[XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY]
+			    .push_back(applicationPriorities.first);  // if no priority, then default to
+		// XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
+		else  // take value, and do not allow DEFAULT value of 0 -> force to
+		      // XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
+			orderedByPriority[it->second
+			                      ? it->second
+			                      : XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY]
+			    .push_back(applicationPriorities.first);
 	}
 
 	__COUT__ << "Here is the order supervisors will be " << stateMachineCommand

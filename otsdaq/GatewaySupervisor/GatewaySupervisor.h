@@ -197,8 +197,8 @@ class WorkLoopManager;
 
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
-		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);  ///< reloads cfgMgr to find Context hosts; not safe mid-transition
-		static void 					launchStartOTSCommand							(const std::string& command, const std::vector<std::string>& hostnames);  ///< no ConfigurationManager access
+		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr, std::vector<std::string>* ignoredHostnames = nullptr);  ///< reloads cfgMgr to find Context hosts; not safe mid-transition
+		static void 					launchStartOTSCommand							(const std::string& command, const std::vector<std::string>& hostnames, std::vector<std::string>* ignoredHostnames = nullptr);  ///< no ConfigurationManager access
 		std::vector<std::string> 		getLiveContextHostnames							(void) const;  ///< hosts of running contexts, from allSupervisorInfo_
 		static void 					launchStartOneServerCommand						(const std::string& command, ConfigurationManager* cfgMgr, const std::string& contextName);
 
@@ -216,6 +216,10 @@ class WorkLoopManager;
 																						const std::string& username,
 																						const std::vector<std::string>& parameters,
 																						std::string logEntry = "");
+		void        					sendGetReadyForTransition						(const std::string& transitionName);
+		void        					sendStandDownForTransition						(const std::string& transitionName, bool transitionCompleted);
+		void        					throwIfSupervisorsWereNotReadyForTransition		(void);
+		void        					reportSupervisorsNotReadyForTransition			(void);
 		void        					broadcastMessage								(xoap::MessageReference msg);
 		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg, unsigned int iteration = 0);
 		void        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg, unsigned int iterationIndex = 0);
@@ -434,6 +438,8 @@ class WorkLoopManager;
 		std::condition_variable remoteIterationCV_;
 		unsigned int            remoteIterationIndex_ = 0;
 		std::atomic<bool>       isRemoteSubsystemIteration_{false}; ///< true when broadcastMessage() iteration loop is driven by top-level re-sends
+		std::atomic<bool>       getReadyNoticeAwaitingLaunch_{false}; ///< true after "get ready" was sent to the supervisors and before the transition is launched; if the launch fails, "stand down" is sent
+		std::string             supervisorsNotReadyForTransitionReport_; ///< for Halt/Abort/Shutdown, which go ahead although a supervisor was not ready: the exception text to give the users when the transition is done
 		std::atomic<bool>       remoteSubsystemErrorReceived_{false}; ///< set when top-level sends Error/Fail while this subsystem is mid-transition; checked only in the needNextIteration wait
 
 		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; ///<moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies

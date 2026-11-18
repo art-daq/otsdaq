@@ -20,6 +20,21 @@ this page is the practical layer on top. Script: `ai_scripts/mm_macro.py`. *Veri
 A Macro Maker macro runs *on the front end*: Macro Maker sends the macro text to the FE Supervisor, which interprets it with
 the FE's `universalRead`/`universalWrite` (so it works for any FE that implements them, including the emulator).
 
+## Rule: FE Macros are registered by the end of Configure
+
+Rule for every FEVInterface class: when the Configure transition finishes, its FE Macros are fully registered. Before that
+the list is not valid. Macro Maker returns an error for list, run, read and write requests (web and UDP) made while a
+transition is in progress: "Front-end requests through Macro Maker are not available until the '<transition>' transition
+finishes." Wait for the transition to end and ask again. Forwarding from one front end to another through Macro Maker
+(and FE Macro steps of Iterator plans) stays open during a transition.
+
+For people writing supervisors: before every transition the Gateway sends every supervisor a `SystemTransitionNotice`
+"GetReady" (get ready for `<transition>` - are you ready?) and afterwards "StandDown" (`<transition>` completed/failed).
+`CoreSupervisorBase` only stores it: `isSystemTransitionInProgress()` and `getSystemTransitionName()`. Each supervisor uses
+that however it wants (e.g. to avoid lockups). Override `isReadyForSystemTransition()` to answer "not ready"; the Gateway
+asks again each second and after 8 seconds refuses the transition, naming the supervisor. No answer counts as "not ready"
+too, so a supervisor busy with a long request (e.g. Macro Maker running a macro) holds off transitions until it is done.
+
 ## Find and run
 
 The system must be **Configured** (the front ends only exist then; otherwise Macro Maker lists none).

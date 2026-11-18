@@ -39,8 +39,11 @@ class SOAPMessenger : public virtual toolbox::lang::Class
 	std::string sendStatus(XDAQ_CONST_CALL xdaq::ApplicationDescriptor* d,
 	                       std::string                                  message);
 
+	/// replyTimeoutSeconds is how long to wait for the target application's reply
 	xoap::MessageReference sendWithSOAPReply(
-	    XDAQ_CONST_CALL xdaq::ApplicationDescriptor* d, xoap::MessageReference message);
+	    XDAQ_CONST_CALL xdaq::ApplicationDescriptor* d,
+	    xoap::MessageReference                       message,
+	    unsigned int                                 replyTimeoutSeconds = 300);
 	xoap::MessageReference sendWithSOAPReply(
 	    XDAQ_CONST_CALL xdaq::ApplicationDescriptor* d, SOAPCommand soapCommand);
 	xoap::MessageReference sendWithSOAPReply(
