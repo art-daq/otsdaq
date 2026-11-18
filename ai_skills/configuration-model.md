@@ -37,6 +37,15 @@ The type of a group follows from its member tables (`ConfigurationManager::getTy
 A group with some but not all members of a fixed type is an error ("incomplete match to a
 Backbone group").
 
+Group **names** are free text and carry no meaning: the type comes from the members only. The
+tutorial data (`otsdaq_demo_data`) names its groups `testContext` (Context), `defaultConfig`
+(Configuration), `iterateGroup` (Iterate) and `TableEditWizBackbone` (Backbone), so a Backbone called
+`TableEditWizBackbone` is normal on any install made from it (full, lite or maxlite) and has nothing
+to do with Wiz mode being on. A Backbone that the Configuration GUI creates itself is named
+`WizBackbone` (`ConfigurationGUI.html`). `cfg_udp_set_alias.sh` keeps the active Backbone's name and
+saves a new key of it. The names and keys in use are the line pairs of
+`$USER_DATA/ServiceData/ActiveTableGroups.cfg`.
+
 ## How Configure finds its configuration
 
 `Configure,<alias>` (browser, `ots_drive_udp_test ... Configure <alias>`, the Iterator)
