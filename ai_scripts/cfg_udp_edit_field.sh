@@ -7,10 +7,15 @@
 #   - ots running with OTS_CONFIG_UDP_PORT and OTS_CONFIG_UDP_IP set
 #
 # Usage:
-#   ./cfg_udp_edit_field.sh <table> <uid> <column> <newValue> [groupType]
+#   ./cfg_udp_edit_field.sh [--from-key <key>] <table> <uid> <column> <newValue> [groupType]
+#
+#   --from-key <key>  start from that key of the active group's name instead of the active key,
+#                     e.g. the key an alias points to (cfg_udp_list_aliases.sh) without activating it
+#                     first. The edit still ends by activating the NEW key, as without the option.
 #
 # Examples:
 #   ./cfg_udp_edit_field.sh FEOtsUDPTemplateInterfaceTable ExampleInterface0 Status Off Context
+#   ./cfg_udp_edit_field.sh --from-key 3 DataProcessorTable DB1Consumer1 Status Off Configuration
 #
 # Record UIDs come from the first column of getSpecificTable or from
 # cfg_udp_browse_tree.sh; they differ per instance.
@@ -21,8 +26,15 @@
 
 set -e
 
+FROM_KEY=""
+if [ "$1" = "--from-key" ]; then
+    FROM_KEY="$2"
+    case "$FROM_KEY" in ''|*[!0-9]*) echo "ERROR: --from-key needs a group key (a number), got '$FROM_KEY'."; exit 1;; esac
+    shift 2 || true
+fi
+
 if [ $# -lt 4 ]; then
-    echo "Usage: $0 <table> <uid> <column> <newValue> [groupType]"
+    echo "Usage: $0 [--from-key <key>] <table> <uid> <column> <newValue> [groupType]"
     echo "  groupType: Context (default), Configuration, or Backbone"
     exit 1
 fi
@@ -73,9 +85,18 @@ if [ -z "$GROUP_NAME" ] || [ "$GROUP_KEY" = "-1" ]; then
     exit 1
 fi
 echo "Active $GROUP_TYPE group: $GROUP_NAME key $GROUP_KEY"
+if [ -n "$FROM_KEY" ]; then
+    GROUP_KEY="$FROM_KEY"
+    echo "Starting from $GROUP_NAME key $GROUP_KEY (--from-key)"
+fi
 
 # Get current table version
 MEMBERS=$(cfg_ro getSpecificTableGroup groupName="$GROUP_NAME" groupKey="$GROUP_KEY")
+if echo "$MEMBERS" | grep -q "<Error"; then
+    echo "ERROR: cannot read $GROUP_NAME key $GROUP_KEY:"
+    echo "$MEMBERS" | grep -oP "Error value='\K[^']+" | head -3
+    exit 1
+fi
 CURRENT_VERSION=$(echo "$MEMBERS" | grep -A1 "MemberName value='$TABLE'" | grep -oP "MemberVersion value='\K[^']+" || true)
 
 if [ -z "$CURRENT_VERSION" ]; then

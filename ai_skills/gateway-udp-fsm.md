@@ -81,7 +81,11 @@ Command names: `Initialize`, `Configure`, `Start`, `Pause`, `Resume`, `Stop`,
 `Halt`, `Abort`. `Configure` requires the **Configuration Alias as its first
 parameter**; without it the log shows
 `Can only transition to Configured if a Configuration Alias parameter is provided`.
-Find aliases with the ConfigGUI UDP: `getActiveTableGroups` shows
+The aliases to give it: `ai_scripts/cfg_udp_list_aliases.sh -c` prints one
+`<alias> <group> <key>` line per group alias of type Configuration (the Gateway UDP itself
+has no alias query). Configure does not check the state machine's `SystemAliasFilter`: that
+filter only shortens the list the web page offers (`addFilteredConfigAliasesToXML`).
+By hand with the ConfigGUI UDP: `getActiveTableGroups` shows
 `Configuration-ActiveGroupAlias` **only when** a GroupAliases entry matches the
 active Configuration group; otherwise read `getGroupAliases`. `Start` takes the
 run number as an optional first parameter (omitted: next number from
