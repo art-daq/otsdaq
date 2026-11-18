@@ -59,8 +59,8 @@ A new processor instance is two rows in the **Configuration** group: a settings 
 `DataProcessorTable` row that names the plugin, its buffer group and links to the settings row. *Verified* sequence (adds a second
 saver to buffer `DB0`):
 ```bash
-# 0. edit from the Configuration key the alias uses (aliases: cfg_udp_list_aliases.sh); activate it first if it is not active
-ots_cfg_udp_test 127.0.0.1 $OTS_CONFIG_UDP_PORT activateTableGroup groupName=defaultConfig groupKey=4 ignoreWarnings=1
+# 0. edit from the Configuration key the alias uses (aliases: cfg_udp_list_aliases.sh): if it is not the active key,
+#    add `-k <that key>` to the command of step 1 (no need to activate it first)
 # 1. both rows, one new group key (-n first shows the result; -w accepts the tree warnings a Context/Configuration may have)
 ai_scripts/cfg_udp_edit_group.sh -w -t Configuration -g defaultConfig \
   "+RawDataSaverConsumerTable/RAWSaver1" "RawDataSaverConsumerTable/RAWSaver1/FilePath=\${OTSDAQ_DATA}" \

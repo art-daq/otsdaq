@@ -219,7 +219,7 @@ particular instance is hard-coded.
 | `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port, the enable flag and `EnableApplicationStatusMonitoring` together, chaining temporary versions (verified 2026-11-14: turning monitoring on changed every app from `Not Monitored` to its state) |
 | `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
 | `add_desktop_icon.sh [-n] [-w] appstatus\|subsystemlaunch` or `<caption> <alt> <url> <image> [perm] [app] [unique] [folder]` | adds a Desktop icon to the active Context group (see "Desktop icons" below); `-n` is a dry run, `-w` accepts tree warnings |
-| `cfg_udp_edit_group.sh [-n] [-w] [-g newName] <edit>...` | many edits across tables into one new group (cells, links, rows, `new:`/`add:` tables), activate |
+| `cfg_udp_edit_group.sh [-n] [-w] [-k key] [-g newName] <edit>...` | many edits across tables into one new group (cells, links, rows, `new:`/`add:` tables), activate; starts from the active key, or from `-k`/`--from-key` (e.g. the key an alias uses, no need to activate it first) |
 | `add_remote_subsystem.sh` | top-level Context: satellite icon + `SubsystemUserDataPathsTable` row (see `ots-subsystems.md`) |
 
 ## Editing links and adding rows (saveTreeNodeEdit editNodeType values)

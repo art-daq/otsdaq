@@ -9,10 +9,13 @@
 #   - ots running with ConfigGUI UDP enabled; a Kerberos ticket (the edit author)
 #
 # Usage:
-#   ./cfg_udp_edit_group.sh [-n] [-t <groupType>] [-g <newGroupName>] [-c <comment>] <edit> [<edit> ...]
+#   ./cfg_udp_edit_group.sh [-n] [-t <groupType>] [-k <key>] [-g <newGroupName>] [-c <comment>] <edit> [<edit> ...]
 #
 #   -n   dry run: make the temporary edits, print each edited table, save nothing
 #   -t   group type to start from: Context (default), Configuration, Backbone, Iterate
+#   -k   (or --from-key) start from that key of the active group's name instead of the active
+#        key, e.g. the key an alias points to (cfg_udp_list_aliases.sh), without activating it
+#        first. The script still ends by activating the NEW key, as without the option.
 #   -g   save the result under this group name instead of the active group's name
 #   -c   table/group comment (default: "Edited by cfg_udp_edit_group.sh")
 #   -w   ignore tree warnings when saving/activating the group (ignoreWarnings=1, what the
@@ -45,13 +48,18 @@
 
 set -e
 
-DRY=0; IGNW=0; GROUP_TYPE=Context; NEW_GROUP=""; COMMENT="Edited by cfg_udp_edit_group.sh"
-while getopts "nwt:g:c:" o; do
+DRY=0; IGNW=0; GROUP_TYPE=Context; NEW_GROUP=""; COMMENT="Edited by cfg_udp_edit_group.sh"; FROM_KEY=""
+# --from-key is the same option as -k (the name cfg_udp_edit_field.sh uses); getopts takes short options only
+ARGS=(); for a in "$@"; do [ "$a" = "--from-key" ] && a="-k"; ARGS+=("$a"); done
+set -- "${ARGS[@]}"
+while getopts "nwt:g:c:k:" o; do
     case $o in n) DRY=1;; w) IGNW=1;; t) GROUP_TYPE="$OPTARG";; g) NEW_GROUP="$OPTARG";; c) COMMENT="$OPTARG";;
-    *) sed -n 2,45p "$0" | sed 's/^# \{0,1\}//'; exit 1;; esac
+    k) FROM_KEY="$OPTARG"
+       case "$FROM_KEY" in ''|*[!0-9]*) echo "ERROR: -k/--from-key needs a group key (a number), got '$FROM_KEY'."; exit 1;; esac;;
+    *) sed -n 2,48p "$0" | sed 's/^# \{0,1\}//'; exit 1;; esac
 done
 shift $((OPTIND - 1))
-[ $# -ge 1 ] || { sed -n 2,45p "$0" | sed 's/^# \{0,1\}//'; exit 1; }
+[ $# -ge 1 ] || { sed -n 2,48p "$0" | sed 's/^# \{0,1\}//'; exit 1; }
 
 CFG_IP="${OTS_CONFIG_UDP_IP:-127.0.0.1}"
 CFG_PORT="${OTS_CONFIG_UDP_PORT:-2010}"
@@ -83,8 +91,14 @@ ACTIVE=$(cfg_ro getActiveTableGroups)
 GROUP_NAME=$(echo "$ACTIVE" | grep -oP "${GROUP_TYPE}-ActiveGroupName value='\K[^']+" || true)
 GROUP_KEY=$(echo "$ACTIVE" | grep -oP "${GROUP_TYPE}-ActiveGroupKey value='\K[^']+" || true)
 [ -n "$GROUP_NAME" ] && [ "$GROUP_KEY" != "-1" ] || { echo "ERROR: no active $GROUP_TYPE group (is ots running with ConfigGUI UDP?)."; exit 1; }
-echo "Starting from active $GROUP_TYPE group $GROUP_NAME key $GROUP_KEY"
+if [ -n "$FROM_KEY" ]; then
+    echo "Active $GROUP_TYPE group is $GROUP_NAME key $GROUP_KEY; starting from key $FROM_KEY (-k/--from-key)"
+    GROUP_KEY="$FROM_KEY"
+else
+    echo "Starting from active $GROUP_TYPE group $GROUP_NAME key $GROUP_KEY"
+fi
 MEMBERS=$(cfg_ro getSpecificTableGroup groupName="$GROUP_NAME" groupKey="$GROUP_KEY")
+echo "$MEMBERS" | grep -q "<Error" && { echo "ERROR: cannot read $GROUP_NAME key $GROUP_KEY: $(xml_error "$MEMBERS")"; exit 1; }
 
 declare -A VER        # table -> current (possibly temporary) version
 declare -A EDITED     # table -> 1 when it has a temporary version to persist
