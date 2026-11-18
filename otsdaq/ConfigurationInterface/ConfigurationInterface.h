@@ -5,6 +5,7 @@
 #include <mutex>
 #include <set>
 #include <sstream>
+#include <utility>
 #include "otsdaq/Macros/CoutMacros.h"
 
 #include "otsdaq/TableCore/MakeTable.h"
@@ -88,6 +89,8 @@ private:
 	static bool								theVersionTrackingEnabled_;  	///< tracking versions 1 is enabled, 0 is disabled
 
 	std::mutex								tableReaderMutex_;
+	std::set<std::pair<const TableBase*, TableVersion>> fillFailedViews_;	///< (table, version) of stored views that a failed fill left partly filled; get() fills them again
+	std::mutex								fillFailedViewsMutex_;
 
 };
 

@@ -23,6 +23,11 @@ Steps (each ONE quoted argument; words split like a shell, so quote names that h
   fsm <StateMachineName>               CHOOSE_FSM            configure <alias>              CONFIGURE_ALIAS
   configure-group <group> <key>        CONFIGURE_GROUP       configure-active               CONFIGURE_ACTIVE_GROUP
   run <seconds> [wait]                 RUN (with wait: ends when the front ends' running threads end)
+  wait <seconds>                       WAIT: the plan pauses that long (no FSM transition; counts down in the log)
+  activate <alias>                     ACTIVATE_ALIAS: load and activate the group the alias points to, in the
+                                       Iterator's own configuration manager (no Configure; a later
+                                       configure-active or modify step uses it)
+  activate-group <group> <key>         ACTIVATE_GROUP: the same for a group name and key
   start | stop | pause | resume | halt FSM transitions (no parameters)
   label <name> | repeat <label> <n>    BEGIN_LABEL | REPEAT_LABEL (loop: run the steps between again n times)
   subsystems Set|Add|Remove <a,b,..>   SETUP_INCLUDED_SUBSYSTEMS
@@ -34,7 +39,8 @@ Steps (each ONE quoted argument; words split like a shell, so quote names that h
         EXECUTE_FE_MACRO (a front-end macro) | EXECUTE_MM_MACRO (a Macro Maker macro) on the targets, with
         dimensional loops: each loop=... is one dimension of <n> iterations whose named inputs start at <init>
         and change by <step> (e.g. loop=3:myOtherArg=5:2); out= saves the outputs to a file
-Not covered: WAIT, ACTIVATE_ALIAS/GROUP, and TargetSubsystem for remote subsystems (set it with `set <N> TargetSubsystem=<name>`).
+Not covered: TargetSubsystem for remote subsystems (set it with `set <N> TargetSubsystem=<name>`; wait, activate,
+activate-group, run, label, repeat, fsm, modify and subsystems steps refuse one).
 
 Example, a scan: five runs of 20 s, the amplitude register of the emulator is not reachable from a plan, so scan
 an FE macro input instead:
@@ -63,6 +69,9 @@ KINDS = {"fsm": ("CHOOSE_FSM", "IterationCommandChooseFSMTable"),
          "configure-group": ("CONFIGURE_GROUP", "IterationCommandConfigureGroupTable"),
          "configure-active": ("CONFIGURE_ACTIVE_GROUP", None),
          "run": ("RUN", "IterationCommandRunTable"),
+         "wait": ("WAIT", "IterationCommandRunTable"),
+         "activate": ("ACTIVATE_ALIAS", "IterationCommandConfigureAliasTable"),
+         "activate-group": ("ACTIVATE_GROUP", "IterationCommandConfigureGroupTable"),
          "label": ("BEGIN_LABEL", "IterationCommandBeginLabelTable"),
          "repeat": ("REPEAT_LABEL", "IterationCommandRepeatLabelTable"),
          "start": ("START", None), "stop": ("STOP", None), "pause": ("PAUSE", None), "resume": ("RESUME", None),
@@ -226,9 +235,12 @@ class Plans:
         n = len(tok)
         if kw == "fsm" and n == 2:
             v["NameOfStateMachine"] = tok[1]
-        elif kw == "configure" and n == 2:
+        elif kw in ("configure", "activate") and n == 2:
             v["SystemAlias"] = tok[1]
-        elif kw == "configure-group" and n == 3:
+        elif kw == "wait" and n == 2 and re.fullmatch(r"\d+", tok[1]):
+            v["DurationInSeconds"] = tok[1]
+            v["WaitForAllFrontEndsRunningThread"] = "False"  # not read by WAIT; a valid value for the shared table
+        elif kw in ("configure-group", "activate-group") and n == 3:
             v["GroupName"], v["GroupKey"] = tok[1], tok[2]
         elif kw == "run" and n in (2, 3) and re.fullmatch(r"\d+", tok[1]):
             v["DurationInSeconds"] = tok[1]

@@ -214,12 +214,12 @@ particular instance is hard-coded.
 | Script | Purpose |
 |--------|---------|
 | `cfg_udp_browse_tree.sh [startPath] [depth]` | read-only tree browse of the active Context group |
-| `cfg_udp_edit_field.sh <table> <uid> <column> <value> [groupType]` | one-field edit → save → new group → activate; refuses the enable-only gateway UDP edit |
+| `cfg_udp_edit_field.sh [--from-key <key>] <table> <uid> <column> <value> [groupType]` | one-field edit → save → new group → activate; starts from the active key, or from `--from-key` (e.g. the key an alias uses, no need to activate it first; verified: the new group is that key with only the edited table replaced); refuses the enable-only gateway UDP edit |
 | `cfg_udp_set_alias.sh <alias> [<groupName> <groupKey>]` | points the alias at the group key (default: the active Configuration group): new `GroupAliasesTable` version, new active Backbone key (verified 2026-11-14) |
 | `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port, the enable flag and `EnableApplicationStatusMonitoring` together, chaining temporary versions (verified 2026-11-14: turning monitoring on changed every app from `Not Monitored` to its state) |
 | `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
 | `add_desktop_icon.sh [-n] [-w] appstatus\|subsystemlaunch` or `<caption> <alt> <url> <image> [perm] [app] [unique] [folder]` | adds a Desktop icon to the active Context group (see "Desktop icons" below); `-n` is a dry run, `-w` accepts tree warnings |
-| `cfg_udp_edit_group.sh [-n] [-w] [-g newName] <edit>...` | many edits across tables into one new group (cells, links, rows, `new:`/`add:` tables), activate |
+| `cfg_udp_edit_group.sh [-n] [-w] [-k key] [-g newName] <edit>...` | many edits across tables into one new group (cells, links, rows, `new:`/`add:` tables), activate; starts from the active key, or from `-k`/`--from-key` (e.g. the key an alias uses, no need to activate it first) |
 | `add_remote_subsystem.sh` | top-level Context: satellite icon + `SubsystemUserDataPathsTable` row (see `ots-subsystems.md`) |
 
 ## Editing links and adding rows (saveTreeNodeEdit editNodeType values)
