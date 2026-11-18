@@ -4,7 +4,7 @@ _otsdaq_ is a Ready-to-Use data-acquisition (DAQ) solution aimed at scaling down
 
 _otsdaq_ provides a library of supported front-end boards and firmware modules which implement a custom UDP protocol.   Additionally, an integrated Run Control GUI and readout software are provided, preconfigured to communicate with _otsdaq_ firmware.
 
-_otsdaq_ is fully Artificial Intelligence (AI) and Super Intelligence (SI) enabled, at all levels, and can be fully engaged by Large Language Model (LLM) agents. From installing and configuring a system, through driving the State Machine, reading and writing front-end registers and visualizing the data, to maintaining its own documentation and tutorials, an LLM agent can do the work. The skills and scripts that teach an agent how are in this repository: [ai_skills](https://github.com/art-daq/otsdaq/tree/develop/ai_skills) and [ai_scripts](https://github.com/art-daq/otsdaq/tree/develop/ai_scripts). To try it, follow the tutorial [Using AI/SI LLM Agents to Control Your Hardware](https://otsdaq.fnal.gov/tutorials/using-ai-agents-with-otsdaq.html).
+_otsdaq_ is fully Artificial Intelligence (AI) and Super Intelligence (SI) enabled, at all levels, and can be fully engaged by Large Language Model (LLM) agents. From installing and configuring a system, through driving the State Machine, reading and writing front-end registers and visualizing the data, to maintaining its own documentation and tutorials, an LLM agent can do the work. The skills and scripts that teach an agent how are in this repository: [ai_skills](https://github.com/art-daq/otsdaq/tree/develop/ai_skills) and [ai_scripts](https://github.com/art-daq/otsdaq/tree/develop/ai_scripts). To try it, follow the tutorial [Using AI/SI LLM Agents to Control Your Hardware](https://otsdaq.fnal.gov/tutorials/using-ai-si-llm-agents-to-control-your-hardware.html).
 
 <a id="install"></a>
 
@@ -22,7 +22,7 @@ See [lite-quick-install-readme.md](https://github.com/art-daq/otsdaq-demo/blob/d
 **Full otsdaq**, with artdaq and xdaq through Spack: under an hour when products are already
 available from CVMFS or an administrator's upstream area, more than two hours from scratch.
 Add `--develop` to also check out the otsdaq sources for development.
-See the [installation tutorial](https://otsdaq.fnal.gov/tutorials_v2/tutorialPages/installing_and_starting_otsdaq.php) for details.
+See the [installation tutorial](https://otsdaq.fnal.gov/tutorials/installing-and-starting-otsdaq.html) for details.
 
     mkdir ots && cd ots && wget https://raw.githubusercontent.com/art-daq/otsdaq-demo/develop/tools/ots-quick-spack-start_v1.1.sh -O ots-quick-spack-start.sh && chmod +x ots-quick-spack-start.sh && unset SPACK_ROOT && ./ots-quick-spack-start.sh
 
