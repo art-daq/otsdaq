@@ -269,6 +269,12 @@ void get(TableBase*&                          table,
 	}
 	catch(const std::runtime_error& e)
 	{
+		// The failed fill leaves a partly filled view stored for this version (columns missing in the
+		// source hold their default values). Erase it, or the next get() takes it as a valid cached
+		// version and returns it with no error (e.g. a second group activation succeeded silently).
+		if(table)
+			table->eraseView(version);
+
 		__SS__ << "Error occurred while getting and filling Table \"" << tableName
 		       << "\" version:" << version << std::endl;
 		ss << "\n" << e.what() << __E__;
@@ -276,6 +282,9 @@ void get(TableBase*&                          table,
 	}
 	catch(...)
 	{
+		if(table)  // same as above: do not leave a partly filled view in the cache
+			table->eraseView(version);
+
 		__SS__ << "Unknown error occurred while getting and filling Table \"" << tableName
 		       << "\" version:" << version << std::endl;
 		try
