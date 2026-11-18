@@ -24,14 +24,18 @@ active Iterate group is in `ActiveTableGroups.cfg` like the other types; it can 
 | `fsm <name>` | CHOOSE_FSM | state machine name | first step: which FSM the plan drives |
 | `configure <alias>` / `configure-group <g> <k>` / `configure-active` | CONFIGURE_ALIAS / _GROUP / _ACTIVE_GROUP | alias, or group name and key | the Iterator takes over the FSM: it can not if another window drives it |
 | `run <s> [wait]` | RUN | `DurationInSeconds`, `WaitForAllFrontEndsRunningThread` | Start, run, Stop; with wait the duration is ignored |
+| `wait <s>` | WAIT | `DurationInSeconds` (row in `IterationCommandRunTable`) | the plan pauses that long, no FSM transition; the Gateway log counts down "Wait remaining time" |
+| `activate <alias>` / `activate-group <g> <k>` | ACTIVATE_ALIAS / ACTIVATE_GROUP | alias, or group name and key | loads and activates that group in the Iterator's configuration manager, no Configure; for a following `configure-active` or `modify` |
 | `start` `stop` `pause` `resume` `halt` | START ... | none | single FSM transitions |
 | `label <L>` / `repeat <L> <n>` | BEGIN_LABEL / REPEAT_LABEL | label, repetitions | the steps between run `n` more times; the pass number (0, 1, ...) feeds modify steps and macro loops |
 | `modify <targets> <path> <start> [step [track]]` | MODIFY_ACTIVE_GROUP | `RelativePathToField`, `FieldStartValue`, `FieldIterationStepSize`, `DoTrackGroupChanges` | sets the field to start + step x pass, then activates; without `track` nothing is saved; with `track` each pass saves a new group key, but its changed table is the **scratch** version (number 2147483647), so the stored keys do not keep per-pass values (seen: keys 5 and 6 both read the last value): the Gateway log lines `startValue`, `stepSize`, `currentValue` are the record |
 | `fe-macro` / `mm-macro <targets> <macro> [out=..] [loop=..]` | EXECUTE_FE_MACRO / EXECUTE_MM_MACRO | `MacroName`, targets, loops, optional output file | loops: n iterations, inputs `name=init:step` |
 | `subsystems Set\|Add\|Remove <list>` | SETUP_INCLUDED_SUBSYSTEMS | `Mode`, `Subsystems` | top-level ots with remote subsystems |
 
-A step with `Status` Off is skipped; a plan with `Status` Off can not be played. Not scripted: WAIT, ACTIVATE_ALIAS/GROUP,
-`TargetSubsystem` (set it with `set <plan> <n> TargetSubsystem=<name>`).
+A step with `Status` Off is skipped; a plan with `Status` Off can not be played. Not scripted:
+`TargetSubsystem` (set it with `set <plan> <n> TargetSubsystem=<name>`; the Iterator refuses one on wait, activate,
+run, label, repeat, fsm, modify and subsystems steps). Verified 2026-11-17 on ots maxlite: a plan `fsm`, `activate`,
+`activate-group`, `wait 5`, `configure`, `run 3` played to the end (both activate steps done at once, the wait took 5 s).
 
 ## Scripts
 
