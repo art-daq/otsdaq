@@ -4,7 +4,7 @@ Indexes: `ai_skills/README.md` (skills) and `ai_scripts/README.md` (scripts). St
 
 ## Repository Layout
 
-- `dev-srcs/` — SSH-cloned repos (the otsdaq repos plus `otsdaq-td-ims-asic`). All edits go here. Check each repo's branch (`git branch --show-current`); it changes over time.
+- `dev-srcs/` — SSH-cloned repos (the otsdaq repos plus `otsdaq-<project>`). All edits go here. Check each repo's branch (`git branch --show-current`); it changes over time.
 - `srcs/` — Disposable copies used by the build. Populated by `UpdateOTS.sh --pullall`.
 - `ots-lite-test/` — The lite install area (build/, local/install/, Data/, databases/).
 

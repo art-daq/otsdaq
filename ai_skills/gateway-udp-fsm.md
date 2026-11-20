@@ -164,7 +164,7 @@ As in the browser, the Iterator may not take over a state machine another window
 UDP state changer itself is allowed). A generated plan needs no plan tables: Configure with the
 alias, then `<runs>` runs of `<seconds>` (Start, wait, Stop).
 
-Verified in ots maxlite 2026-11-12 with two contexts (main + `sunrockContext`):
+Verified in ots maxlite 2026-11-12 with two contexts (main + `projectContext`):
 `raw "Iterator,iteratePlayGenerated,PhysicsRuns0;litedefaultSystemAlias;10;2;0;maxlite%2520iterator%2520test"`
 ran Configure, Start, Stop, Start, Stop in all applications of both contexts and finished in
 ~27 s (`last_finished_plan=---GENERATED_PLAN---`, state Configured).

@@ -18,7 +18,7 @@ define `OTS_LITE` gates code at compile time (`#ifdef OTS_LITE` /
 | otsdaq-utilities | WebGUI, MacroMaker, ConfigurationGUI, Visualizer, Console |
 | otsdaq-components | FE interface plugins (FEOtsUDPTemplateInterface, etc.) |
 | otsdaq-demo | Demo config, `ots-quick-lite-start.sh` installer, emulator |
-| otsdaq-td-ims-asic | Project repo for the Sunrock/TD IMS ASIC FE plugin and its `CoreTables/` table definitions (not part of the installer; added by hand, see `sunrock-fe-context.md`) |
+| otsdaq-<project> | Project repo for an example project FE plugin and its `CoreTables/` table definitions (not part of the installer; added by hand, see `fe-in-own-context.md`) |
 
 ## Not built in lite
 
@@ -33,7 +33,7 @@ reply with an Error). The ARTDAQ supervisors/online monitor were already exclude
 partition XML, and registers the other contexts' applications as remote; `postSOAP` to a
 remote context is an HTTP POST to `/urn:xdaq-application:lid=<N>` of that process. `ots`
 launches extra local non-gateway contexts itself (`xdaq.exe -h <host> -p <port>`); their logs
-are `Data/Logs/otsdaq_quiet_run-<host>-<port>.txt`. See `sunrock-fe-context.md`.
+are `Data/Logs/otsdaq_quiet_run-<host>-<port>.txt`. See `fe-in-own-context.md`.
 Adding or changing a context (or an app, port, LID) needs a total restart: Shutdown/Startup and
 App Status relaunches start contexts from the `ots.xml` snapshot of the last full launch (see
 "Applying Active Context changes" in `gateway-udp-fsm.md`).

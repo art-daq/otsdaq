@@ -21,9 +21,6 @@ cet_script(ALWAYS_COPY
     ots
     ots_remote_start
     ots_remote_instance_start
-    otsdaq_add_artdaq_tables
-    otsdaq_beautify_artdaq_tables
-    otsdaq_convert_artdaq_daq_tables
     # otsdaq_convert_config_to_table #DEPRECATED
     otsdaq_import_system_aliases.sh
     otsweb_login.sh

@@ -33,10 +33,10 @@ const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::
 	std::make_pair(XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS,							"${OTSDAQ_LIB}/libARTDAQSupervisor.so"),
 	std::make_pair(*(std::next(XDAQContextTable::FETypeClassNames_.begin(),2)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
 	std::make_pair(*(std::next(XDAQContextTable::FETypeClassNames_.begin(),1)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(XDAQContextTable::FETypeClassNames_.begin()),						"${OTSDAQ_LIB}/libCoreSupervisors.so"),
+	std::make_pair(*(XDAQContextTable::FETypeClassNames_.begin()),						"${OTSDAQ_LIB}/libARTDAQCoreSupervisors.so"), // ots::ARTDAQFEDataManagerSupervisor is in otsdaq-artdaqinterface
 	std::make_pair(*(std::next(XDAQContextTable::DMTypeClassNames_.begin(),2)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
 	std::make_pair(*(std::next(XDAQContextTable::DMTypeClassNames_.begin(),1)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(XDAQContextTable::DMTypeClassNames_.begin()),						"${OTSDAQ_LIB}/libCoreSupervisors.so"),
+	std::make_pair(*(XDAQContextTable::DMTypeClassNames_.begin()),						"${OTSDAQ_LIB}/libARTDAQCoreSupervisors.so"), // ots::ARTDAQFEDataManagerSupervisor is in otsdaq-artdaqinterface
 	std::make_pair(*(std::next(XDAQContextTable::LogbookTypeClassNames_.begin(),1)),	"${OTSDAQ_UTILITIES_LIB}/libLogbook.so"),
 	std::make_pair(*(XDAQContextTable::LogbookTypeClassNames_.begin()),					"${OTSDAQ_UTILITIES_LIB}/libECLWriter.so"),
 	std::make_pair(*(XDAQContextTable::MacroMakerTypeClassNames_.begin()),				"${OTSDAQ_UTILITIES_LIB}/libMacroMaker.so"),
@@ -59,6 +59,7 @@ const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::
 ///		${OTSDAQ_UTILITIES_LIB}/libSlowControlsDashboard.so
 ///		${OTSDAQ_UTILITIES_LIB}/libMacroMaker.so
 ///		${OTSDAQ_LIB}/libARTDAQSupervisor.so
+///		${OTSDAQ_LIB}/libARTDAQCoreSupervisors.so
 ///		${OTSDAQ_LIB}/libARTDAQOnlineMonitor.so
 ///		${OTSDAQ_LIB}/libDispatcherApp.so
 ///		${OTSDAQ_LIB}/libDataLoggerApp.so

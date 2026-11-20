@@ -83,6 +83,7 @@ using namespace ots;
 
 #define REMOTE_BACKBONE_ERR			"A valid active Backbone configuration group must be specified at the subsystem User Data Path, and it must be retrievable (i.e. same configuration database URI) from the primary Gateway."
 
+const std::string GatewaySupervisor::APPS_STARTING_UP_STATUS = "Starting Up"; //same text as the Startup transition name
 const std::string GatewaySupervisor::COMMAND_PARAM_LOG_ENTRY_PREAMBLE = "LogEntry:";
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE = "SubsystemCommonTableList:";
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE = "SubsystemCommonOverrideTableList:";
@@ -199,7 +200,8 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 /// entry is made when ots is killed
 GatewaySupervisor::~GatewaySupervisor(void)
 {
-	stopBackgroundWorkLoops();  // the threads use this object
+	stopWaitForAllAppsToAnswer();  // the thread uses this object
+	stopBackgroundWorkLoops();     // the threads use this object
 
 	//join before deleting the configuration manager that the thread reads,
 	//	and before the unique_ptr member is destroyed
@@ -237,6 +239,10 @@ void GatewaySupervisor::init(void)
 	conditionID_ = (unsigned int)-1;
 
 	startBackgroundWorkLoops();
+
+	//after a launch the state machine is at Initial right away, but the other contexts are
+	//	still coming up: show "Starting Up" until every app has answered "are you ready?"
+	startWaitForAllAppsToAnswer();
 
 	// setup port translation
 	{
@@ -482,6 +488,232 @@ void GatewaySupervisor::stopBackgroundWorkLoops(void)
 	}
 	__COUT__ << "Background work loops stopped." << __E__;
 }  // end stopBackgroundWorkLoops()
+
+//==============================================================================
+/// startWaitForAllAppsToAnswer
+///	Called at construction (full launch) and at the Startup transition, the two moments
+///	when the other contexts are (re)launched. Starts a thread that asks every app
+///	"are you ready?" and asks again every 2 seconds, with no time limit, until all have
+///	answered (see AppsAnswerWaitWorkLoop()).
+///
+///	The state machine itself is at Initial during the wait; only what is shown changes:
+///	while waiting, the Gateway status and the state machine status requests give
+///	"Starting Up" (see isHoldingBackInitialStatus()), and commands other than
+///	Halt/Abort/Shutdown are refused with the names of the apps that have not answered.
+///	Cancelling the transition from the state machine page ends the wait by hand.
+void GatewaySupervisor::startWaitForAllAppsToAnswer(void)
+{
+	stopWaitForAllAppsToAnswer();  //one wait at a time
+
+	std::lock_guard<std::mutex> lock(appsAnswerWaitControlMutex_);
+	{
+		std::lock_guard<std::mutex> reportLock(appsAnswerWaitReportMutex_);
+		appsNotYetAnsweringReport_ = "Asking all apps 'are you ready?'...";
+	}
+	appsAnsweredPercent_          = 0;
+	waitingForAppsToAnswer_       = true;
+	const unsigned int generation = appsAnswerWaitGeneration_;
+	__COUT__ << "Starting the wait for all apps to answer 'are you ready?' (generation "
+	         << generation << ")..." << __E__;
+	appsAnswerWaitThread_ = std::thread(
+	    [](GatewaySupervisor* supervisor, unsigned int waitGeneration) {
+		    GatewaySupervisor::AppsAnswerWaitWorkLoop(supervisor, waitGeneration);
+	    },
+	    this,
+	    generation);
+}  // end startWaitForAllAppsToAnswer()
+
+//==============================================================================
+/// stopWaitForAllAppsToAnswer
+///	Ends the wait (the thread checks the generation before every question, so the join
+///	takes at most one reply timeout of 2 s). After this the shown status is the state again.
+///	Must be called before the list of apps is rebuilt, because the thread reads it.
+void GatewaySupervisor::stopWaitForAllAppsToAnswer(void)
+{
+	std::lock_guard<std::mutex> lock(appsAnswerWaitControlMutex_);
+	++appsAnswerWaitGeneration_;
+	if(appsAnswerWaitThread_.joinable())
+		appsAnswerWaitThread_.join();
+	waitingForAppsToAnswer_ = false;
+}  // end stopWaitForAllAppsToAnswer()
+
+//==============================================================================
+/// isHoldingBackInitialStatus
+///	Returns true while the state is Initial (and no transition is running) but not every
+///	app has answered "are you ready?" yet - then "Starting Up" is to be shown, not Initial.
+///	Optionally gives the percentage of apps that have answered (0 to 99) and the text
+///	naming the apps that have not.
+bool GatewaySupervisor::isHoldingBackInitialStatus(
+    std::string* appsAnsweredPercent /* = nullptr */,
+    std::string* appsAnswerWaitReport /* = nullptr */)
+{
+	if(!waitingForAppsToAnswer_ || theStateMachine_.isInTransition() ||
+	   theStateMachine_.getCurrentStateName() !=
+	       RunControlStateMachine::INITIAL_STATE_NAME)
+		return false;
+
+	if(appsAnsweredPercent)
+		*appsAnsweredPercent = std::to_string(appsAnsweredPercent_.load());
+	if(appsAnswerWaitReport)
+	{
+		std::lock_guard<std::mutex> reportLock(appsAnswerWaitReportMutex_);
+		*appsAnswerWaitReport = appsNotYetAnsweringReport_;
+	}
+	return true;
+}  // end isHoldingBackInitialStatus()
+
+//==============================================================================
+/// AppsAnswerWaitWorkLoop
+///	child thread
+///	Asks every app (except the Gateway) "are you ready?" with the SystemTransitionNotice
+///	'AreYouReady' (handled by CoreSupervisorBase::systemTransitionNotice, which only
+///	answers). An app that gives no answer (its process is not up yet, or it is still in
+///	its constructor) is asked again in the next pass, 2 seconds later. There is no time
+///	limit: the thread ends when all apps have answered, or at stopWaitForAllAppsToAnswer().
+void GatewaySupervisor::AppsAnswerWaitWorkLoop(GatewaySupervisor* theSupervisor,
+                                               const unsigned int generation)
+try
+{
+	auto stopped = [theSupervisor, generation]() {
+		return theSupervisor->appsAnswerWaitGeneration_ != generation;
+	};
+	auto sleepUnlessStopped = [&stopped](unsigned int seconds) {
+		for(unsigned int i = 0; i < seconds * 4 && !stopped(); ++i)
+			usleep(250000);
+	};
+
+	const unsigned int replyTimeoutSeconds   = 2;
+	const unsigned int askAgainWaitSeconds   = 2;
+	const time_t       warningPeriodSeconds  = 60;
+	const time_t       waitStartTime         = time(0);
+	time_t             lastWarningTime       = waitStartTime;
+	std::set<unsigned int /*app LID*/> answeredAppIds;
+
+	sleepUnlessStopped(askAgainWaitSeconds);  //the launch has just been commanded
+
+	while(!stopped())
+	{
+		unsigned int appCount = 0;
+		std::string  notAnsweringAppNames;
+
+		for(const auto& supervisorInfoPair :
+		    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+		{
+			const SupervisorInfo& supervisorInfo = supervisorInfoPair.second;
+			if(supervisorInfo.isGatewaySupervisor())
+				continue;  //skip self
+
+			++appCount;
+			if(answeredAppIds.find(supervisorInfo.getId()) != answeredAppIds.end())
+				continue;  //answered in an earlier pass
+
+			if(stopped())
+				return;
+
+			std::string readyAnswer;
+			try
+			{
+				SOAPParameters noticeParameters;
+				noticeParameters.addParameter("Notice", "AreYouReady");
+				noticeParameters.addParameter(
+				    "Transition", RunControlStateMachine::STARTUP_TRANSITION_NAME);
+				noticeParameters.addParameter("Result", "");
+
+				xoap::MessageReference reply = theSupervisor->sendWithSOAPReply(
+				    supervisorInfo.getDescriptor(),
+				    SOAPUtilities::makeSOAPMessageReference(
+				        "SystemTransitionNotice" /*handled by CoreSupervisorBase::systemTransitionNotice*/,
+				        noticeParameters),
+				    replyTimeoutSeconds);
+
+				SOAPParameters replyParameters;
+				replyParameters.addParameter("Ready");
+				replyParameters.addParameter("Reason");
+				SOAPUtilities::receive(reply, replyParameters);
+				readyAnswer = replyParameters.getValue("Ready");
+			}
+			catch(...)
+			{
+				readyAnswer = "";  //no answer
+			}
+
+			if(readyAnswer == "1" || readyAnswer == "0")  //any answer shows the app is up
+			{
+				answeredAppIds.insert(supervisorInfo.getId());
+				__COUT__ << "Supervisor '" << supervisorInfo.getName() << "' (LID "
+				         << supervisorInfo.getId() << " in context '"
+				         << supervisorInfo.getContextName()
+				         << "') answered 'are you ready?' after "
+				         << time(0) - waitStartTime << " seconds." << __E__;
+				continue;
+			}
+
+			if(notAnsweringAppNames.size())
+				notAnsweringAppNames += ", ";
+			notAnsweringAppNames += supervisorInfo.getName() + " (LID " +
+			                        std::to_string(supervisorInfo.getId()) + ")";
+		}  //end supervisor loop
+
+		if(stopped())
+			return;
+
+		if(answeredAppIds.size() >= appCount)
+		{
+			__COUT_INFO__ << "All " << appCount
+			              << " app(s) answered 'are you ready?' after "
+			              << time(0) - waitStartTime
+			              << " seconds - the system is started up." << __E__;
+			{
+				std::lock_guard<std::mutex> reportLock(
+				    theSupervisor->appsAnswerWaitReportMutex_);
+				theSupervisor->appsNotYetAnsweringReport_ = "";
+			}
+			theSupervisor->appsAnsweredPercent_    = 100;
+			theSupervisor->waitingForAppsToAnswer_ = false;
+			return;
+		}
+
+		//here, at least one app has not answered yet
+		const unsigned int notAnsweringCount = appCount - answeredAppIds.size();
+		const std::string  waitReport =
+		    "Waiting for " + std::to_string(notAnsweringCount) + " of " +
+		    std::to_string(appCount) + " apps to answer 'are you ready?' (" +
+		    std::to_string(time(0) - waitStartTime) + " seconds so far): " +
+		    notAnsweringAppNames;
+		{
+			std::lock_guard<std::mutex> reportLock(
+			    theSupervisor->appsAnswerWaitReportMutex_);
+			theSupervisor->appsNotYetAnsweringReport_ = waitReport;
+		}
+		const unsigned int answeredPercent = answeredAppIds.size() * 100 / appCount;
+		theSupervisor->appsAnsweredPercent_ =
+		    answeredPercent > 99 ? 99 : answeredPercent;  //100 is for done
+
+		if(time(0) - lastWarningTime >= warningPeriodSeconds)
+		{
+			lastWarningTime = time(0);
+			__COUT_WARN__
+			    << waitReport
+			    << ". The Gateway keeps asking every " << askAgainWaitSeconds
+			    << " seconds and shows '" << GatewaySupervisor::APPS_STARTING_UP_STATUS
+			    << "' until all apps have answered. Check the logs of the apps "
+			       "named here; Shutdown is accepted while waiting."
+			    << __E__;
+		}
+		else
+			__COUT__ << waitReport << __E__;
+
+		sleepUnlessStopped(askAgainWaitSeconds);
+	}  //end ask loop
+}  // end AppsAnswerWaitWorkLoop()
+catch(...)
+{
+	//never leave the status held back because of an unexpected error
+	__COUT_ERR__ << "Unexpected exception while waiting for all apps to answer 'are you "
+	                "ready?' - the wait is ended."
+	             << __E__;
+	theSupervisor->waitingForAppsToAnswer_ = false;
+}  // end AppsAnswerWaitWorkLoop() catch
 
 //==============================================================================
 /// AppStatusWorkLoop
@@ -850,6 +1082,11 @@ try
 								progress =
 								    theSupervisor->theProgressBar_.readPercentageString();
 							}
+							else if(theSupervisor->isHoldingBackInitialStatus(&progress))
+							{
+								//state is Initial, but not all apps have answered "are you ready?" yet
+								status = GatewaySupervisor::APPS_STARTING_UP_STATUS;
+							}
 							else
 							{
 								status =
@@ -890,6 +1127,14 @@ try
 							                     StringMacros::getTimeDurationString(
 							                         theSupervisor->theStateMachine_
 							                             .getTimeInState()))));
+							{
+								//while "Starting Up" is shown in place of Initial, name the apps that have not answered
+								std::string appsAnswerWaitReport;
+								if(theSupervisor->isHoldingBackInitialStatus(
+								       nullptr /*appsAnsweredPercent*/,
+								       &appsAnswerWaitReport))
+									detail = appsAnswerWaitReport;
+							}
 							// make sure broadcast message status is not being updated
 							std::lock_guard<std::mutex> lock(
 							    theSupervisor->broadcastCommandStatusUpdateMutex_);
@@ -6300,6 +6545,33 @@ try
 	}
 
 	/////////////////
+	// After a launch or a Startup, until every app has answered "are you ready?" only the
+	//	commands that stop the system are accepted (the apps that have not answered could not
+	//	take part in the transition).
+	if(waitingForAppsToAnswer_ &&
+	   command != RunControlStateMachine::HALT_TRANSITION_NAME &&
+	   command != RunControlStateMachine::ABORT_TRANSITION_NAME &&
+	   command != RunControlStateMachine::SHUTDOWN_TRANSITION_NAME &&
+	   command != RunControlStateMachine::STARTUP_TRANSITION_NAME &&  //relaunches the apps and starts the wait again
+	   command != RunControlStateMachine::ERROR_TRANSITION_NAME &&
+	   command != RunControlStateMachine::FAIL_TRANSITION_NAME)
+	{
+		std::string appsAnswerWaitReport;
+		{
+			std::lock_guard<std::mutex> reportLock(appsAnswerWaitReportMutex_);
+			appsAnswerWaitReport = appsNotYetAnsweringReport_;
+		}
+		__SS__ << "Error - Can not accept '" << command
+		       << "' yet because the system is still starting up. "
+		       << appsAnswerWaitReport << ". '" << command
+		       << "' is accepted once all apps have answered (the Gateway asks every 2 "
+		          "seconds). Halt, Abort and Shutdown are accepted while waiting, and "
+		          "cancelling the transition from the state machine page ends the wait."
+		       << __E__;
+		__SS_THROW__;
+	}
+
+	/////////////////
 	// Validate FSM name (do here because remote commands bypass stateMachineXgiHandler)
 	//	if fsm name != active fsm name
 	//		only allow, if current state is halted, init, or configured
@@ -6890,6 +7162,12 @@ void GatewaySupervisor::sendGetReadyForTransition(const std::string& transitionN
 	    transitionName == RunControlStateMachine::HALT_TRANSITION_NAME ||
 	    transitionName == RunControlStateMachine::ABORT_TRANSITION_NAME ||
 	    transitionName == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME;
+	//Startup (re)launches the non-gateway contexts, and after a Shutdown their processes are gone,
+	//	so at Startup a supervisor that gives no answer is not running and must not block the transition.
+	//	A supervisor that answers "not ready" (e.g., Startup from Initial during a running macro) still does.
+	const bool noAnswerMeansNotRunning =
+	    transitionName == RunControlStateMachine::STARTUP_TRANSITION_NAME;
+	unsigned int notRunningCount            = 0;
 	supervisorsNotReadyForTransitionReport_ = "";
 	const unsigned int replyTimeoutSeconds    = 2;
 	const time_t       maxNotReadyWaitSeconds = 8;
@@ -6943,6 +7221,20 @@ void GatewaySupervisor::sendGetReadyForTransition(const std::string& transitionN
 
 			//here, supervisor reported not ready, or gave no answer (treated as "not yet")
 			const bool   gaveNoAnswer        = readyAnswer != "0";
+
+			if(gaveNoAnswer && noAnswerMeansNotRunning)
+			{
+				__COUT__ << "Supervisor '" << supervisorInfo.getName() << "' (LID "
+				         << supervisorInfo.getId()
+				         << ") did not answer 'get ready' for transition '"
+				         << transitionName
+				         << "' - taking it as not running (e.g., after a Shutdown); "
+				            "the transition launches it."
+				         << __E__;
+				++notRunningCount;
+				break;  //on to the next supervisor
+			}
+
 			const time_t notReadyWaitSeconds = time(0) - getReadyStartTime;
 
 			if(notReadyWaitSeconds >= maxNotReadyWaitSeconds)
@@ -6992,7 +7284,8 @@ void GatewaySupervisor::sendGetReadyForTransition(const std::string& transitionN
 	}      //end supervisor loop
 
 	__COUT__ << "Done sending 'get ready' for transition '" << transitionName << "': "
-	         << readyCount << " supervisor(s) ready." << __E__;
+	         << readyCount << " supervisor(s) ready, " << notRunningCount
+	         << " not running." << __E__;
 }  // end sendGetReadyForTransition()
 
 //==============================================================================
@@ -8692,10 +8985,23 @@ try
 		makeSystemLogEntry("System shutting down.");
 	RunControlStateMachine::theProgressBar_.step();
 
+	// the apps are about to be killed: no more waiting for them to answer "are you ready?"
+	stopWaitForAllAppsToAnswer();
+
 	// kill all non-gateway contexts (use live hostnames, not the active Context table,
 	// so Shutdown still works after Contexts are added or removed since launch)
+	// Shutdown is often used to recover when something has dropped out, so a node that
+	// ignores the command (e.g., its ots launch script is gone) is only a warning
+	std::vector<std::string> shutdownIgnoredHostnames;
 	GatewaySupervisor::launchStartOTSCommand(
-	    "OTS_APP_SHUTDOWN", getLiveContextHostnames());
+	    "OTS_APP_SHUTDOWN", getLiveContextHostnames(), &shutdownIgnoredHostnames);
+	for(const auto& shutdownIgnoredHostname : shutdownIgnoredHostnames)
+		__COUT_WARN__
+		    << "The command 'OTS_APP_SHUTDOWN' looks to have been ignored by "
+		    << shutdownIgnoredHostname
+		    << ". Is the ots launch script still running on that node? Shutdown is "
+		       "continuing without it; any xdaq processes still running on "
+		    << shutdownIgnoredHostname << " were not killed by this Shutdown." << __E__;
 	RunControlStateMachine::theProgressBar_.step();
 
 	// important to give time for StartOTS script to recognize command (before user does
@@ -8708,8 +9014,9 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	//the others are shut down; now fail if a supervisor was not ready for this transition
-	throwIfSupervisorsWereNotReadyForTransition();
+	// Shutdown does not fail for a supervisor that was not ready or did not answer (it may
+	// be what dropped out); that is given to the users as a system message when done
+	// (see reportSupervisorsNotReadyForTransition())
 
 	if(doLogIntermediate)
 		makeSystemLogEntry("System shutdown complete.");
@@ -8798,6 +9105,7 @@ try
 	//	so contexts and apps added or removed since launch take hold here. That list and
 	//	the app set for transitions then stay fixed until the next Startup.
 	std::vector<std::string> hostnamesNewToContext;
+	stopWaitForAllAppsToAnswer();  // its thread reads the list of apps
 	stopBackgroundWorkLoops();
 	try
 	{
@@ -8862,12 +9170,23 @@ try
 	// important to give time for StartOTS script to recognize command and for apps to
 	// instantiate things (before user does Initialize)
 	//	(a host new to the Context needs longer: ssh, environment setup, then launch)
-	const int startupWaitSeconds = hostnamesNewToContext.empty() ? 10 : 30;
+	//	Only a short fixed wait is done here (for the launch scripts to take the command and
+	//	clear leftover processes). The wait for the apps themselves has no fixed length:
+	//	every app is asked "are you ready?" every 2 seconds until all have answered, and
+	//	until then "Starting Up" is shown in place of Initial (also after this transition
+	//	is done) and Initialize/Configure are refused.
+	const int startupWaitSeconds = 5;
 	for(int i = 0; i < startupWaitSeconds; ++i)
 	{
 		sleep(1);
 		RunControlStateMachine::theProgressBar_.step();
 	}
+	if(!hostnamesNewToContext.empty())
+		__COUT__ << hostnamesNewToContext.size()
+		         << " host(s) new to the Context are started by ssh and take longer to "
+		            "answer."
+		         << __E__;
+	startWaitForAllAppsToAnswer();
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
@@ -13484,7 +13803,17 @@ try
 		}
 		else if(requestType == "cancelStateMachineTransition")
 		{
-			if(!theStateMachine_.isInTransition())
+			std::string appsAnswerWaitReport;
+			if(isHoldingBackInitialStatus(nullptr /*appsAnsweredPercent*/,
+			                              &appsAnswerWaitReport))
+			{
+				//the "transition" the user sees is the wait for all apps to answer "are you ready?"
+				stopWaitForAllAppsToAnswer();
+				__COUT_WARN__ << "The wait for all apps to answer 'are you ready?' was "
+				                 "cancelled by user! At that moment: "
+				              << appsAnswerWaitReport << __E__;
+			}
+			else if(!theStateMachine_.isInTransition())
 			{
 				__COUT__ << "Cancel requested but not in transition - ignoring." << __E__;
 			}
@@ -15053,7 +15382,16 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 	        'E'))  //assume it is Failed or Error and send to state machine
 		xmlOut.addTextElementToData("current_error", gatewayStatus);
 
-	if(theStateMachine_.isInTransition())
+	//The state is Initial right after a launch or a Startup, but until every app has answered
+	//	"are you ready?" the pages are told "in transition: Starting Up" (with the fraction of
+	//	apps that answered as progress), so that Initial is not shown too early.
+	std::string appsAnsweredPercent, appsAnswerWaitReport;
+	const bool  holdingBackInitialStatus =
+	    isHoldingBackInitialStatus(&appsAnsweredPercent, &appsAnswerWaitReport);
+
+	if(holdingBackInitialStatus)
+		xmlOut.addTextElementToData("active_fsmStatus", appsAnswerWaitReport);
+	else if(theStateMachine_.isInTransition())
 	{  // create lock scope to read stable value
 		std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
 		xmlOut.addTextElementToData("active_fsmStatus", broadcastCommandStatus_);
@@ -15061,9 +15399,16 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 	else
 		xmlOut.addTextElementToData("active_fsmStatus", gatewayStatus);
 
-	xmlOut.addTextElementToData("in_transition",
-	                            theStateMachine_.isInTransition() ? "1" : "0");
-	if(theStateMachine_.isInTransition())
+	xmlOut.addTextElementToData(
+	    "in_transition",
+	    (holdingBackInitialStatus || theStateMachine_.isInTransition()) ? "1" : "0");
+	if(holdingBackInitialStatus)
+	{
+		xmlOut.addTextElementToData("transition_progress", appsAnsweredPercent);
+		xmlOut.addTextElementToData("current_transition",
+		                            GatewaySupervisor::APPS_STARTING_UP_STATUS);
+	}
+	else if(theStateMachine_.isInTransition())
 	{
 		xmlOut.addTextElementToData(
 		    "transition_progress",

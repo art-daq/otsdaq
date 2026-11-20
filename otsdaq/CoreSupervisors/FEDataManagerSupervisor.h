@@ -14,7 +14,10 @@ class FEDataManagerSupervisor : public FESupervisor
   public:
 	XDAQ_INSTANTIATOR();
 
-	FEDataManagerSupervisor(xdaq::ApplicationStub* s, bool artdaqDataManager = false);
+	/// If derivedClassAddsDataManager is true, the derived class constructor must add
+	///	its own Data Manager to theStateMachineImplementation_ and then call extractDataManager()
+	FEDataManagerSupervisor(xdaq::ApplicationStub* s,
+	                        bool derivedClassAddsDataManager = false);
 	virtual ~FEDataManagerSupervisor(void);
 
 	virtual void transitionConfiguring(toolbox::Event::Reference e) override;
@@ -22,10 +25,9 @@ class FEDataManagerSupervisor : public FESupervisor
 	virtual void transitionResuming(toolbox::Event::Reference e) override;
 
   protected:
-	DataManager* theDataManager_;
+	DataManager* extractDataManager();  ///< used in constructor (also of derived classes)
 
-  private:
-	DataManager* extractDataManager();  ///< likely, just used in constructor
+	DataManager* theDataManager_;
 };
 
 }  // namespace ots

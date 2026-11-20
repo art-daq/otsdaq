@@ -305,10 +305,10 @@ fails with `Invalid latest version`. Create version 0 with `saveSpecificTable` f
 template (`version=-1`) and the rows as data, exactly as the browser table editor does:
 
 ```bash
-ots_cfg_udp_test 127.0.0.1 2010 saveSpecificTable tableName=FESunrockInterfaceTable \
+ots_cfg_udp_test 127.0.0.1 2010 saveSpecificTable tableName=FEProjectInterfaceTable \
     version=-1 temporary=0 dataOffset=0 sourceTableAsIs=0 lookForEquivalent=0 \
     tableComment=First%20version \
-    "data=SunrockInterface0,sunrock-zynq.placeholder,root,22,5,5,My%20comment,;"
+    "data=ProjectInterface0,project-zynq.placeholder,root,22,5,5,My%20comment,;"
 ```
 
 `data`: each cell URI-encoded and followed by `,`; each row ends with `;`. All columns in

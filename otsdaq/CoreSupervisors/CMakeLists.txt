@@ -12,13 +12,12 @@ endif()
 if(DEFINED ENV{OTS_LITE})
 	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES otsdaq::XdaqLite)
 else()
-	set(OTS_ARTDAQ_SUPERVISOR_SOURCES ARTDAQDataManagerSupervisor.cc ARTDAQFEDataManagerSupervisor.cc)
-	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES artdaq::DAQdata otsdaq::ARTDAQDataManager otsdaq::ARTDAQTableBase)
+	# Note: ARTDAQDataManagerSupervisor and ARTDAQFEDataManagerSupervisor live in the otsdaq-artdaqinterface repository
+	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES artdaq::DAQdata)
 endif()
 
 cet_make_library(LIBRARY_NAME CoreSupervisors
 		SOURCE
-		${OTS_ARTDAQ_SUPERVISOR_SOURCES}
 		ConfigurationSupervisorBase.cc
 		CorePropertySupervisorBase.cc
 		CoreSupervisorBase.cc
@@ -35,6 +34,7 @@ cet_make_library(LIBRARY_NAME CoreSupervisors
 		otsdaq::WebUsersUtilities
 		otsdaq::FiniteStateMachine
 		otsdaq::XDAQContextTable
+		otsdaq::SlowControlsTableBase
 		otsdaq::FECore
 		otsdaq::SOAPUtilities
 		otsdaq::CgiDataUtilities

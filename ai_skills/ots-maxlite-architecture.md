@@ -6,15 +6,15 @@ Supervisors, web desktop) without TRACE, messagefacility, cetlib, fhiclcpp, Boos
 artdaq-database, ZeroMQ, CURL or Python.
 
 Branch: `feature/ots-maxlite` in otsdaq, otsdaq-utilities, otsdaq-components, otsdaq-demo
-(otsdaq-td-ims-asic: `develop`). As of 2026-11-12 the branch exists only in the developer's
+(otsdaq-<project>: `develop`). As of 2026-11-12 the branch exists only in the developer's
 local clones (not on GitHub), so installs use `--repo-base <local dir with the repos>`.
 
 Status 2026-11-12, all on x86_64 (first_demo tutorial): install and compile, Wiz mode, normal
 mode, ConfigGUI/MacroMaker/Gateway UDP remote controls, configuration edits saved to the text
 store, Configure/Start, emulator data to the Visualizer (`getWaveformData` live samples), web
 Console receiving. State machine: Configure/Start/Pause/Resume/Stop/Halt/Shutdown/Startup, and Startup
-applying a Gateway UDP port change (see `gateway-udp-fsm.md`). Two contexts in two processes (Sunrock FE,
-`sunrock-fe-context.md`); the Iterator (generated plan over Gateway UDP). ARM: cross-compiled for aarch64 and 32-bit ARM (armhf), see "Cross compiling
+applying a Gateway UDP port change (see `gateway-udp-fsm.md`). Two contexts in two processes (a project FE,
+`fe-in-own-context.md`); the Iterator (generated plan over Gateway UDP). ARM: cross-compiled for aarch64 and 32-bit ARM (armhf), see "Cross compiling
 for ARM". Not yet: running on an ARM board.
 
 ## Install

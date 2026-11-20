@@ -91,8 +91,31 @@ same work.
      stores the app set for transitions. If the rebuild throws, the previous list is put back and
      Startup fails.
 6. `startBackgroundWorkLoops()` and `reloadSupervisorProperties()`.
-7. Wait (10 s; 30 s if a host is new to the Context) for the contexts to come up, then broadcast
-   Startup to the apps of the new list.
+7. Wait 5 s (for the launch scripts to take the command), start the wait for all apps to answer
+   (next section), then broadcast Startup to the Gateway-context apps of the new list.
+
+### Waiting for all apps to answer (since 2026-11-18, not yet built or run)
+
+After a full launch (`init()`) and at Startup, `startWaitForAllAppsToAnswer()` starts a thread
+(`AppsAnswerWaitWorkLoop`) that sends every app the `SystemTransitionNotice` with
+`Notice = AreYouReady` (2 s reply timeout) and asks the ones that gave no answer again every 2 s.
+There is no time limit. `CoreSupervisorBase::systemTransitionNotice` only answers it (it does not
+mark a transition as in progress, so MacroMaker requests are not blocked).
+
+While the wait runs the state machine **is** at `Initial`, but `Initial` is not shown:
+
+- the Gateway's own status in App Status is `Starting Up`, progress = percent of apps that
+  answered, detail = `Waiting for N of M apps to answer 'are you ready?' ...: <names>`
+  (this is also what a top-level Gateway sees for the subsystem);
+- `addStateMachineStatusToXML` gives `in_transition=1`, `current_transition=Starting Up`,
+  `transition_progress` and `active_fsmStatus` with the same text; `current_state` stays `Initial`;
+- commands other than Halt/Abort/Shutdown/Error/Fail are refused with
+  `Can not accept '<command>' yet because the system is still starting up. Waiting for ...`.
+
+The wait ends when all apps have answered (`All N app(s) answered 'are you ready?' after S
+seconds`), at Shutdown, at the next Startup, or when the user cancels the transition from the
+state machine page (`cancelStateMachineTransition`). An app that never comes up is named in a
+warning once per minute; the way out is Shutdown (fix, then Startup) or the cancel.
 
 ### What the launch script does on `OTS_APP_STARTUP`
 
@@ -148,7 +171,7 @@ Nothing in "At Startup" has been built or run yet. To check on a run:
 3. Disable a context: after Startup it is not launched, is gone from App Status
    (`Leaving out app LID ...`), and transitions do not target it.
 4. Add a context on a host new to the system: the warning appears, the Gateway host's action
-   handler log shows the ssh remote launch, and the app answers Initialize after the 30 s wait.
+   handler log shows the ssh remote launch, and `Starting Up` is shown until that app answers.
 5. Lite build (`OTS_LITE`): the same with `addRemoteApplication`.
 6. App Status "relaunch all" (`LAUNCH_OTS`) still works; it now also gets the renewed `ots.xml`
    copy from the Gateway before the script makes its own.

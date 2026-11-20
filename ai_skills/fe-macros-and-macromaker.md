@@ -4,7 +4,7 @@ How an agent works with the two kinds of macro that run on a front end (an FE in
 them, creating Macro Maker macros without a browser, writing and changing compiled FE macros in C++, and chaining them
 in sequences and Iterator plans. The UDP side (Macro Maker remote control, `ots_mm_udp_test`) is in `macromaker-udp.md`;
 this page is the practical layer on top. Script: `ai_scripts/mm_macro.py`. *Verified* = run on ots maxlite
-(2026-11-15, ExampleInterface0 on the hardware emulator, SunrockInterface0); the rest is read from the source.
+(2026-11-15, ExampleInterface0 on the hardware emulator, ProjectInterface0); the rest is read from the source.
 
 ## The two kinds, and the third thing people confuse them with
 
@@ -44,7 +44,7 @@ ai_scripts/mm_macro.py list [<feUID>]       # FE macros with inputs -> outputs, 
 ai_scripts/mm_macro.py show <MacroMakerMacro>
 ai_scripts/mm_macro.py run ExampleInterface0 varTest myOtherArg=5
 ai_scripts/mm_macro.py run ExampleInterface0 AgentOffset newoff=0x40 --type public
-ai_scripts/mm_macro.py run SunrockInterface0 sunrockStatus            # FE macro without inputs
+ai_scripts/mm_macro.py run ProjectInterface0 projectStatus            # FE macro without inputs
 ```
 `run` checks the names against the macro's signature first (every input exactly once, by name) and prints the outputs.
 `ots_mm_udp_test` runs FE macros only; `mm_macro.py` also runs public and private Macro Maker macros. Underneath, both send
@@ -54,7 +54,7 @@ inputs are `name,value;name,value`, outputs `name,name`, each URI-encoded (the s
 Values:
 - **FE macro inputs** arrive as strings. `__GET_ARG_IN__("x", T)` converts a number with `StringMacros::getNumber`: decimal,
   or hex with `0x`; the word `Default`/`DEFAULT` selects the default given in C++. A non-number throws "is not a number".
-  Outputs are whatever the macro set (verified: `sunrockStatus` returns text and `40 (0x28)` for a number).
+  Outputs are whatever the macro set (verified: `projectStatus` returns text and `40 (0x28)` for a number).
 - **Macro Maker macro inputs** are numbers: decimal, or hex with `0x`. *Verified trap:* `regaddr=1005` is decimal 1005 = 0x3ED, not
   0x1005 (a read of address `1005` returned the unmapped address' own value); give `regaddr=0x1005`. Outputs read
   `decimal (0xhex)`.
@@ -112,24 +112,24 @@ addresses of your FE (`emulator-registers.md` for the emulator; a read of an unm
 
 ## Writing an FE macro (C++)
 
-Three edits in the FE plugin (`<repo>/<FEInterfaces>/`): the header, the constructor, the body. The Sunrock FE
-(`otsdaq-td-ims-asic/FEInterfaces/FESunrockInterface*.{h,cc}`) is a small complete example; `FEOtsUDPTemplateInterfaceImpl.cc` shows
+Three edits in the FE plugin (`<repo>/<FEInterfaces>/`): the header, the constructor, the body. The example project FE
+(`otsdaq-<project>/FEInterfaces/FEProjectInterface*.{h,cc}`) is a small complete example; `FEOtsUDPTemplateInterfaceImpl.cc` shows
 register access and nested macros.
 
 ```cpp
-// 1. header (FESunrockInterface.h): declare it; the signature is fixed by __ARGS__
-void sunrockSetValue(__ARGS__);
+// 1. header (FEProjectInterface.h): declare it; the signature is fixed by __ARGS__
+void projectSetValue(__ARGS__);
 
 // 2. constructor, in <Plugin>Impl.cc: register it (name, function, input names, output names, [permission, callers, tooltip])
 FEVInterface::registerFEMacroFunction(
-    "sunrockSetValue",
-    static_cast<FEVInterface::frontEndMacroFunction_t>(&FESunrockInterface::sunrockSetValue),
+    "projectSetValue",
+    static_cast<FEVInterface::frontEndMacroFunction_t>(&FEProjectInterface::projectSetValue),
     std::vector<std::string>{"name", "value"},   // namesOfInputArgs
     std::vector<std::string>{"result"},          // namesOfOutputArgs
     1);                                          // required permission: 0 none, 1 user, 255 admin
 
 // 3. body
-void FESunrockInterface::sunrockSetValue(__ARGS__)
+void FEProjectInterface::projectSetValue(__ARGS__)
 {
     const std::string name  = FEVInterface::getFEMacroConstArgument(argsIn, "name");   // string input
     uint64_t          count = __GET_ARG_IN__("count", uint64_t, 1);                    // number input, default 1 for "Default"
@@ -210,6 +210,6 @@ How each Macro Maker step becomes C++ (what the exporter writes; do it by hand t
 | "Invalid command type ..." | malformed `sequence` in the macro file: a step needs `index:type:field[:field]`, a read needs its 4th field (possibly empty) |
 | FE macro missing from `list` after editing | not rebuilt/restarted, or not registered in the constructor |
 
-*Verified 2026-11-15*: the export (above); list; running FE macros (`test`, `sunrockStatus`, one with a spaced input name) and public/private Macro Maker
+*Verified 2026-11-15*: the export (above); list; running FE macros (`test`, `projectStatus`, one with a spaced input name) and public/private Macro Maker
 macros with hex addresses, delay and variables; input-name/count errors; refusal of a hex-only variable name; decimal-vs-hex input
 values. *Not run*: writing a new FE macro by hand, the browser's export dialog, `LSBF`, `--save`, FE macro permissions, `allowedCallingFEs`.

@@ -6,7 +6,8 @@
 #
 # sets OTS_SETUP_TYPE=<subsystem>, USER_DATA=<ots dir>/Data_<subsystem>,
 # OTSDAQ_DATA=$USER_DATA/OutputData and the subsystem's ports (OTS_MAIN_PORT,
-# OTS_CONFIG_UDP_*, OTS_MACROMAKER_UDP_*). ARTDAQ_DATABASE_URI is left as is, so all
+# OTS_WIZ_MODE_MAIN_PORT (the same as the main port, so that Wiz mode of one subsystem does not take the
+# port of another), OTS_CONFIG_UDP_*, OTS_MACROMAKER_UDP_*). ARTDAQ_DATABASE_URI is left as is, so all
 # subsystems share one database (needed for a top-level gateway to read the aliases of
 # its subsystems). Without an argument, or with an unknown one, setup_ots.sh lists the
 # subsystems and returns 1. `ots -k` already kills only the processes of $USER_DATA/,
@@ -19,7 +20,7 @@
 # Usage:
 #   ./setup_ots_subsystems.sh <ots dir> <name>:<mainPort>:<cfgUdpPort>:<mmUdpPort> [...]
 #   ./setup_ots_subsystems.sh <ots dir> --show       # print the current block
-#   e.g. ./setup_ots_subsystems.sh /data/fasic/asic/ots top:2115:2110:2111 sunrock:2015:2010:2011
+#   e.g. ./setup_ots_subsystems.sh /path/to/ots top:2115:2110:2111 sub1:2015:2010:2011 sub2:2215:2210:2211
 #
 # It does not create the Data_<name> folders (copy an existing Data folder, e.g.
 # `cp -a Data Data_<name>`), and warns about any that are missing. Ports that ots binds
@@ -49,7 +50,7 @@ for spec in "$@"; do
         echo "ERROR: bad subsystem spec '$spec' (expected name:mainPort:cfgUdpPort:mmUdpPort)."; exit 1
     fi
     NAMES="$NAMES $name"
-    CASES="$CASES    $name) export OTS_MAIN_PORT=$main OTS_CONFIG_UDP_PORT=$cfg OTS_MACROMAKER_UDP_PORT=$mm ;;
+    CASES="$CASES    $name) export OTS_MAIN_PORT=$main OTS_WIZ_MODE_MAIN_PORT=$main OTS_CONFIG_UDP_PORT=$cfg OTS_MACROMAKER_UDP_PORT=$mm ;;
 "
     [ -d "$OTS_DIR/Data_$name" ] || echo "WARNING: $OTS_DIR/Data_$name does not exist yet."
 done

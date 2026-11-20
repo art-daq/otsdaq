@@ -57,6 +57,10 @@ class SlowControlsTableBase : virtual public TableBase ///<virtual so future plu
 														) const;
 	virtual std::string		setFilePath					()  const = 0;
 
+	/// fcl helpers
+	static void				insertMetricsBlock			(std::ostream& out, std::string& tabStr, std::string& commentStr, const std::string& parentPath, ConfigurationTree daqNode);
+	static void				addCommentWhitespace		(std::ostream& os, size_t lineLength);
+
 	/// Column names
 	struct ColChannel
 	{

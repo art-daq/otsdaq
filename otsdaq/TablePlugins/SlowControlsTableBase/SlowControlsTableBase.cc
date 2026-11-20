@@ -2,6 +2,7 @@
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
 #include <fstream>  // std::fstream
+#include <sstream>
 
 using namespace ots;
 
@@ -403,3 +404,168 @@ bool SlowControlsTableBase::outputEpicsPVFile(
 	__COUT__ << "outputEpicsPVFile() return false" << __E__;
 	return false;
 }  // end outputEpicsPVFile()
+
+// clang-format off
+#define				FCL_COMMENT_POSITION	65
+#define				TABSZ					4
+
+/// OUTCF:   (X)string + (C)comment, with tree-path + (F)field
+#define				OUTCF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << parentPath << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+/// OUTC:    (X)string + (C)comment, with tree-path
+#define				OUTC(X,C)				OUTCF(X,C,"")
+/// OUTCLF:  (X)string + (C)comment, with local tree-path + (F)field
+#define				OUTCLF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath << std::string(std::string(F).size()?("/" + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+/// OUTCL:   (X)string + (C)comment, with local tree-path
+#define				OUTCL(X,C)				OUTCLF(X,C,"")
+/// OUTCL2F: (X)string + (C)comment, with local2 tree-path + (F)field
+#define				OUTCL2F(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath2 << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+/// OUTCL2:  (X)string + (C)comment, with local2 tree-path
+#define				OUTCL2(X,C)				OUTCL2F(X,C,"")
+// clang-format on
+
+//==============================================================================
+/// add whitespace so comments lineup in fcl for nicer presentation
+void SlowControlsTableBase::addCommentWhitespace(std::ostream& os, size_t lineLength)
+{
+	for(size_t i = 0; true; i += 20)
+	{
+		if(lineLength < FCL_COMMENT_POSITION + i)  // pad to FCL_COMMENT_POSITION + i
+		{
+			os << std::string(FCL_COMMENT_POSITION + i - lineLength, ' ');
+			break;
+		}
+	}
+	os << " // ";
+}  //end addCommentWhitespace()
+
+//==============================================================================
+/// insertMetricsBlock
+///	Writes the fcl metrics block of the node's daqMetricsLink (used by the FE Supervisor
+///	metric manager and by the artdaq table plugins).
+void SlowControlsTableBase::insertMetricsBlock(std::ostream&      out,
+                                               std::string&       tabStr,
+                                               std::string&       commentStr,
+                                               const std::string& parentPath,
+                                               ConfigurationTree  daqNode)
+{
+	auto metricsGroup = daqNode.getNode("daqMetricsLink");
+
+	out << "\n";
+	OUTCF("metrics: {", "", metricsGroup.getParentLinkColumnName());
+	PUSHTAB;
+	if(!metricsGroup.isDisconnected())
+	{
+		auto metrics = metricsGroup.getChildren();
+		bool sendSystemMetrics(false), sendProcessMetrics(false);
+		for(auto& metric : metrics)
+		{
+			if(!metric.second.status())
+				PUSHCOMMENT;
+
+			__COUTT__ << "Inserting metric... " << parentPath << __E__;
+			std::string localParentPath =
+			    parentPath + "/" + metricsGroup.getParentLinkColumnName() + ":" +
+			    metric.second.getTableName() + ":" + metricsGroup.getParentLinkIndex() +
+			    ":" + metricsGroup.getParentLinkID() + "/" + metric.second.getValue();
+			__COUTT__ << "Inserting metric... " << localParentPath << __E__;
+
+			OUTCL(metric.second.getNode("metricKey").getValue() << ": {",
+			      metric.second.hasComment() ? metric.second.getComment() : "");
+			PUSHTAB;
+
+			if(metric.second.getNode("sendSystemMetrics").getValue<bool>())
+			{
+				sendSystemMetrics = true;
+			}
+			if(metric.second.getNode("sendProcessMetrics").getValue<bool>())
+			{
+				sendProcessMetrics = true;
+			}
+
+			OUTCLF("metricPluginType: "
+			           << metric.second.getNode("metricPluginType").getValue(),
+			       "" /* comment */,
+			       "metricPluginType");
+			OUTCLF(
+			    "level_string: " << metric.second.getNode("metricLevelString").getValue(),
+			    "" /* comment */,
+			    "metricLevelString");
+
+			auto metricParametersGroup = metric.second.getNode("metricParametersLink");
+			if(!metricParametersGroup.isDisconnected())
+			{
+				auto metricParameters = metricParametersGroup.getChildren();
+				for(auto& metricParameter : metricParameters)
+				{
+					if(!metricParameter.second.status())
+						PUSHCOMMENT;
+
+					__COUTT__ << "Inserting metric... " << localParentPath << __E__;
+					std::string localParentPath2 =
+					    localParentPath + "/" +
+					    metricParametersGroup.getParentLinkColumnName() + ":" +
+					    metricParameter.second.getTableName() + ":" +
+					    metricParametersGroup.getParentLinkIndex() + ":" +
+					    metricParametersGroup.getParentLinkID() + "/" +
+					    metricParameter.second.getValue();
+					__COUTT__ << "Inserting metric... " << localParentPath2 << __E__;
+					OUTCL2(metricParameter.second.getNode("metricParameterKey").getValue()
+					           << ": "
+					           << metricParameter.second.getNode("metricParameterValue")
+					                  .getValue(),
+					       metricParameter.second.hasComment()
+					           ? metricParameter.second.getComment()
+					           : "");
+
+					if(!metricParameter.second.status())
+						POPCOMMENT;
+				}
+			}
+			POPTAB;
+			OUT << "} # end " << metric.second.getNode("metricKey").getValue()
+			    << "\n\n";  // end metric
+
+			if(!metric.second.status())
+				POPCOMMENT;
+		}  //end metricsGroup children loop
+
+		__COUTT__ << "Inserting metric send... " << parentPath << __E__;
+		std::string localParentPath =
+		    parentPath + "/" + metricsGroup.getParentLinkColumnName() + ":" +
+		    metricsGroup.getTableName() + ":" + metricsGroup.getParentLinkIndex() + ":" +
+		    metricsGroup.getParentLinkID();
+		if(sendSystemMetrics)
+		{
+			__COUTT__ << "Inserting send_system_metrics... " << localParentPath << __E__;
+			OUTCLF("send_system_metrics: true ",
+			       "true, if any children are true",
+			       "*/sendSystemMetrics");
+		}
+		else
+			OUTCLF("# send_system_metrics: false ",
+			       "true, if any children are true",
+			       "*/sendSystemMetrics");
+
+		if(sendProcessMetrics)
+		{
+			__COUTT__ << "Inserting send_process_metrics... " << localParentPath << __E__;
+			OUTCLF("send_process_metrics: true ",
+			       "true, if any children are true",
+			       "*/sendProcessMetrics");
+		}
+		else
+			OUTCLF("# send_process_metrics: false ",
+			       "true, if any children are true",
+			       "*/sendProcessMetrics");
+	}  //end connected daq metrics link handling
+	else
+	{
+		__COUTS__(3) << "No metrics found" << __E__;
+		std::string localParentPath =
+		    parentPath + "/" + metricsGroup.getParentLinkColumnName();
+		OUTCL("# no metrics found", "" /* comment*/);
+	}
+
+	POPTAB;
+	OUT << "} # end metrics\n\n";  // end metrics
+}  // end insertMetricsBlock()

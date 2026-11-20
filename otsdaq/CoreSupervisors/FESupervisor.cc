@@ -2,7 +2,7 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/FECore/FEVInterfacesManager.h"
 #ifndef OTS_LITE
-#include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
+#include "otsdaq/TablePlugins/SlowControlsTableBase/SlowControlsTableBase.h"
 #endif
 
 #include "artdaq/DAQdata/Globals.hh"  // instantiates artdaq::Globals::metricMan_
@@ -1698,7 +1698,7 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 			std::ostringstream oss;
 			std::string        tabString      = "";
 			std::string        commentsString = "";
-			ARTDAQTableBase::insertMetricsBlock(
+			SlowControlsTableBase::insertMetricsBlock(
 			    oss, tabString, commentsString, "" /* parentPath*/, feSupervisorNode);
 			metric_string = oss.str();
 		}

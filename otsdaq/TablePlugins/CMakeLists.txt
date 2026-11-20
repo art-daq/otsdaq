@@ -6,24 +6,9 @@
 
 include(otsdaq::table)
 
-if(NOT DEFINED ENV{OTS_LITE}) # artdaq configuration helpers: not in ots-lite
-	add_subdirectory(ARTDAQTableBase)
-endif()
+# Note: ARTDAQTableBase and the ARTDAQ table plugins live in the otsdaq-artdaqinterface repository
 add_subdirectory(SlowControlsTableBase)
 add_subdirectory(XDAQContextTable)
-
-# artdaq table plugins: not in ots-lite (no artdaq)
-if(NOT DEFINED ENV{OTS_LITE})
-cet_build_plugin(ARTDAQBoardReaderTable otsdaq::table LIBRARIES REG otsdaq::ARTDAQTableBase otsdaq::SlowControlsTableBase)
-
-cet_build_plugin(ARTDAQDataLoggerTable otsdaq::table LIBRARIES REG otsdaq::ARTDAQTableBase  otsdaq::SlowControlsTableBase )
-
-cet_build_plugin(ARTDAQDispatcherTable otsdaq::table  LIBRARIES REG otsdaq::ARTDAQTableBase otsdaq::SlowControlsTableBase )
-
-cet_build_plugin(ARTDAQEventBuilderTable otsdaq::table LIBRARIES REG otsdaq::ARTDAQTableBase  otsdaq::SlowControlsTableBase )
-
-cet_build_plugin(ARTDAQRoutingManagerTable otsdaq::table  LIBRARIES REG otsdaq::ARTDAQTableBase otsdaq::SlowControlsTableBase )
-endif()
 
 cet_build_plugin(FESlowControlsTable otsdaq::table LIBRARIES REG otsdaq::SlowControlsTableBase )
 

@@ -70,7 +70,7 @@ configuration: `show` after a change, and play once.
   step leaves `Error` and the message (e.g. the front end's reason for a macro).
 - Run files: one per RUN step pass, `data-path-configuration.md`.
 
-## Verified 2026-11-15 (ots maxlite, Sunrock + emulator)
+## Verified 2026-11-15 (ots maxlite, a project FE + emulator)
 
 A 7-step plan with an FE macro loop, a modify step and a 3-pass label loop was created, shown, edited (set, add,
 move, disable, remove, enable) with consistent rows, and played after a restart: the pass count, the macro step and

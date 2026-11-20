@@ -14,6 +14,7 @@ const std::string CoreSupervisorBase::WORK_LOOP_WORKING = "Working";
 const std::string CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_COMMAND    = "SystemTransitionNotice";
 const std::string CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_GET_READY  = "GetReady";
 const std::string CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_STAND_DOWN = "StandDown";
+const std::string CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_ARE_YOU_READY = "AreYouReady";
 
 //==============================================================================
 CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
@@ -547,6 +548,8 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 ///	Handles the Gateway Supervisor's notice sent around every transition:
 ///		Notice = GetReady  : "get ready for <Transition> - are you ready?"
 ///		Notice = StandDown : "stand down - <Transition> <Result>" (completed or failed)
+///	and the question asked after a launch and after Startup, until every supervisor answers:
+///		Notice = AreYouReady : "are you ready?" (only answered, nothing is stored)
 ///	The reply has Ready ("1" or "0") and Reason (why not ready).
 xoap::MessageReference CoreSupervisorBase::systemTransitionNotice(
     xoap::MessageReference message)
@@ -604,6 +607,13 @@ xoap::MessageReference CoreSupervisorBase::systemTransitionNotice(
 		}
 		__SUP_COUT__ << "Stand down - system transition '" << transitionName << "' "
 		             << result << "." << __E__;
+	}
+	else if(notice == CoreSupervisorBase::SYSTEM_TRANSITION_NOTICE_ARE_YOU_READY)
+	{
+		//the Gateway asks this after a launch and after Startup, until every supervisor answers;
+		//	answering is the point (this supervisor is constructed and takes requests),
+		//	so nothing is stored and no transition is marked as in progress
+		__SUP_COUT__ << "Answering the Gateway's 'are you ready?' - ready." << __E__;
 	}
 	else
 	{

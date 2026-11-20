@@ -45,6 +45,7 @@ void VisualDataManager::configure(void)
 
 	__CFG_COUT__ << "Buffer count " << buffers.size() << __E__;
 
+	unsigned int visualizerConsumerCount = 0;
 	for(const auto& buffer : buffers)
 	{
 		__CFG_COUT__ << "Data Buffer Name: " << buffer.first << std::endl;
@@ -82,38 +83,41 @@ void VisualDataManager::configure(void)
 							__CFG_COUT__ << "CONSUMER: " << consumer->getProcessorID()
 							             << std::endl;
 
-							try
+							++visualizerConsumerCount;
+
+							// only a DQM histogram consumer (ROOT) joins the live DQM
+							// list; any other consumer, e.g. a RawDataVisualizerConsumer
+							// for the waveform viewer, stays in its buffer and is served
+							// from there (getWaveformData), so both kinds can coexist
+							DQMHistosBase* dqmConsumer =
+							    dynamic_cast<DQMHistosBase*>(consumer);
+							if(dqmConsumer == nullptr)
 							{
-								__CFG_COUT__ << "Trying for DQMHistosConsumerBase."
+								__CFG_COUT__ << "Consumer " << consumer->getProcessorID()
+								             << " is not a DQM histogram consumer, so it "
+								                "is not added to the live DQM list."
 								             << __E__;
-								// theLiveDQMHistos_ =
-								//     dynamic_cast<DQMHistosConsumerBase*>(consumer);
-								theLiveDQMs_.emplace_back(
-								    dynamic_cast<DQMHistosBase*>(consumer));
-								dynamic_cast<DQMHistosBase*>(consumer)->setDataManager(
-								    this);
-
-								// __CFG_COUT__ << "Did we succeed? " << theLiveDQMHistos_
-								//              << __E__;
+								continue;
 							}
-							catch(...)
-							{
-							}  // ignore failures
 
-							if(theLiveDQMs_.size() == 0)
-							{
-								__CFG_SS__
-								    << "There are no configured visualizer consumer! "
-								       "There must be at least one consumer if you want "
-								       "to use the visualizer."
-								    << __E__;
-								__CFG_SS_THROW__;
-							}
+							__CFG_COUT__ << "Consumer " << consumer->getProcessorID()
+							             << " is a DQM histogram consumer." << __E__;
+							theLiveDQMs_.emplace_back(dqmConsumer);
+							dqmConsumer->setDataManager(this);
 						}
 					}
 				}
 			}
 		}
+	}
+
+	if(visualizerConsumerCount == 0)
+	{
+		__CFG_SS__ << "There are no configured visualizer consumer! "
+		              "There must be at least one consumer if you want "
+		              "to use the visualizer."
+		           << __E__;
+		__CFG_SS_THROW__;
 	}
 }
 

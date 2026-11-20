@@ -1,8 +1,5 @@
 #include "otsdaq/CoreSupervisors/FEDataManagerSupervisor.h"
 
-#ifndef OTS_LITE
-#include "../ARTDAQDataManager/ARTDAQDataManager.h"
-#endif
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/DataManager/DataManager.h"
 #include "otsdaq/DataManager/DataManagerSingleton.h"
@@ -15,8 +12,8 @@ XDAQ_INSTANTIATOR_IMPL(FEDataManagerSupervisor)
 
 //==============================================================================
 FEDataManagerSupervisor::FEDataManagerSupervisor(xdaq::ApplicationStub* s,
-                                                 bool                   artdaqDataManager)
-    : FESupervisor(s)
+                                                 bool derivedClassAddsDataManager)
+    : FESupervisor(s), theDataManager_(nullptr)
 {
 	__SUP_COUT__ << "Constructor." << __E__;
 
@@ -37,30 +34,21 @@ FEDataManagerSupervisor::FEDataManagerSupervisor(xdaq::ApplicationStub* s,
 	//			)
 	//	);
 
-	if(artdaqDataManager)
+	if(derivedClassAddsDataManager)
 	{
-#ifdef OTS_LITE
-		__SUP_SS__ << "ARTDAQ Data Manager is not available in an OTS_LITE build."
-		           << __E__;
-		__SUP_SS_THROW__;
-#else
-		__SUP_COUT__ << "Adding ARTDAQ Data Manager now...!" << __E__;
-		CoreSupervisorBase::theStateMachineImplementation_.push_back(
-		    DataManagerSingleton::getInstance<ARTDAQDataManager>(
-		        CorePropertySupervisorBase::getContextTreeNode(),
-		        CorePropertySupervisorBase::getSupervisorConfigurationPath(),
-		        CorePropertySupervisorBase::getSupervisorUID()));
-#endif
+		// The derived class constructor must add its own Data Manager to
+		//	theStateMachineImplementation_ and then call extractDataManager()
+		//	(e.g., ARTDAQFEDataManagerSupervisor in otsdaq-artdaqinterface).
+		__SUP_COUT__ << "Data Manager will be added by the derived class." << __E__;
+		return;
 	}
-	else
-	{
-		__SUP_COUT__ << "Adding Data Manager now...!" << __E__;
-		CoreSupervisorBase::theStateMachineImplementation_.push_back(
-		    DataManagerSingleton::getInstance<DataManager>(
-		        CorePropertySupervisorBase::getContextTreeNode(),
-		        CorePropertySupervisorBase::getSupervisorConfigurationPath(),
-		        CorePropertySupervisorBase::getSupervisorUID()));
-	}
+
+	__SUP_COUT__ << "Adding Data Manager now...!" << __E__;
+	CoreSupervisorBase::theStateMachineImplementation_.push_back(
+	    DataManagerSingleton::getInstance<DataManager>(
+	        CorePropertySupervisorBase::getContextTreeNode(),
+	        CorePropertySupervisorBase::getSupervisorConfigurationPath(),
+	        CorePropertySupervisorBase::getSupervisorUID()));
 
 	extractDataManager();
 

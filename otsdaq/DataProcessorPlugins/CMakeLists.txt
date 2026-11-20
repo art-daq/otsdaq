@@ -6,13 +6,7 @@
 
 include(otsdaq::dataProcessor)
 
-if(NOT DEFINED ENV{OTS_LITE})
-cet_make_library(LIBRARY_NAME ARTDAQConsumer SOURCE ARTDAQConsumerImpl.cc LIBRARIES PUBLIC otsdaq::ARTDAQReaderCore PRIVATE otsdaq::DataManager)
-cet_build_plugin(ARTDAQConsumer otsdaq::dataProcessor LIBRARIES REG otsdaq::ARTDAQConsumer  )
-
-cet_make_library(LIBRARY_NAME ARTDAQProducer SOURCE ARTDAQProducerImpl.cc LIBRARIES PUBLIC otsdaq::ARTDAQReaderCore PRIVATE otsdaq::DataManager)
-cet_build_plugin(ARTDAQProducer  otsdaq::dataProcessor LIBRARIES REG otsdaq::ARTDAQProducer )
-endif()
+# Note: the ARTDAQConsumer and ARTDAQProducer plugins live in the otsdaq-artdaqinterface repository
 
 cet_build_plugin(UDPDataListenerProducer  otsdaq::dataProcessor )
 

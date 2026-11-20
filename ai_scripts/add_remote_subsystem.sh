@@ -21,7 +21,7 @@
 # Usage:
 #   ./add_remote_subsystem.sh [-n] <uid> <userDataPath> <ip>:<gatewayUdpPort> [setupType] [fullName] [landingPage] [folder]
 #     -n           dry run (temporary edits only; a missing table definition is reported, nothing is copied)
-#     uid          letters/digits/_ (e.g. sunrock); icon caption is fullName (default uid)
+#     uid          letters/digits/_ (e.g. sub1); icon caption is fullName (default uid)
 #     userDataPath user@host:/abs/Data_<sub> (needed for RELAUNCH from Subsystem Launch: the top's ots
 #                  script runs `ssh -K <user>@<host> ots_remote_instance_start ...`, also for the
 #                  same host, so Kerberos ssh to it must work without a prompt; the active-groups
@@ -30,8 +30,8 @@
 #     setupType    the satellite's `source setup_ots.sh <type>` (used to relaunch it), default uid
 #     landingPage  Desktop folder opened when entering the subsystem (optional, "" for none)
 #     folder       top-level Desktop folder for the satellite's icons (default: uid)
-#   e.g. ./add_remote_subsystem.sh sunrock asic@correlator4.fnal.gov:/data/fasic/asic/ots/Data_sunrock \
-#            127.0.0.1:2014 sunrock "Sunrock ASIC"
+#   e.g. ./add_remote_subsystem.sh sub1 username@yourhost:/path/to/ots/Data_sub1 \
+#            127.0.0.1:2014 sub1 "Subsystem 1"
 #
 # Restart the top ots afterwards. Then: icon in the Desktop, subsystem in App Status and
 # Subsystem Launch (add that page with add_desktop_icon.sh -w subsystemlaunch).

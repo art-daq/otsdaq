@@ -111,7 +111,6 @@ if(NOT DEFINED ENV{OTS_MAXLITE})
 endif()
 find_package(XercesC 3.2 REQUIRED EXPORT)
 if(NOT DEFINED ENV{OTS_MAXLITE})
-find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
 find_package(CURL REQUIRED EXPORT) # Curl required by artdaq-database, unclear why EXPORT command isn't working
 endif()
 
@@ -144,10 +143,8 @@ else()
 endif()
 
 # source
-if(NOT DEFINED ENV{OTS_LITE})
-	add_subdirectory(artdaq-ots)
-	cet_register_export_set(SET_NAME artdaqUsers SET_DEFAULT)
-endif()
+# Note: the artdaq interface (artdaq-ots, ARTDAQ supervisors, ARTDAQ table and data processor plugins)
+#	lives in the otsdaq-artdaqinterface repository
 add_subdirectory(otsdaq)
 cet_register_export_set(SET_NAME otsdaqUsers SET_DEFAULT)
 

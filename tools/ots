@@ -110,7 +110,11 @@ setupTrace
 ctrlChandler () {
 	out "Caught Ctrl+C -- exiting all launched otsdaq processes..."
 	#try to force kill other ots scripts
-	echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
+	#Note: a Macro Maker mode session only owns its own host, so it must not write the
+	#	subsystem quit file (every node of the normal mode system obeys that file)
+	if [[ "$ISMACROMAKER" != "1" ]]; then
+		echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
+	fi
 	echo "KILL_ALL ${THIS_HOST}" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 	exit 130   # standard exit code for SIGINT
 }
@@ -1270,7 +1274,11 @@ fi
 #setup web path before XDAQ setup uses it in xml config files..
 #  ..also make a link to user specified web path.
 if [ "x$OTSDAQ_WEB_PATH" == "x" ]; then  #setup the location for ots web-apps
-	export OTSDAQ_WEB_PATH=${OTSDAQ_UTILITIES_DIR}/WebGUI
+	if [ "x$OTSDAQ_UTILITIES_WEB_DIR" != "x" ]; then #web code lives in the otsdaq-utilities-web repo
+		export OTSDAQ_WEB_PATH=${OTSDAQ_UTILITIES_WEB_DIR}/WebGUI
+	else
+		export OTSDAQ_WEB_PATH=${OTSDAQ_UTILITIES_DIR}/WebGUI
+	fi
 fi
 rm $OTSDAQ_WEB_PATH/UserWebPath &>/dev/null  #delete link first, hide output
 ln -s $USER_WEB_PATH $OTSDAQ_WEB_PATH/UserWebPath &>/dev/null  #make link, hide output
@@ -1490,7 +1498,8 @@ launchOTSMacromaker() {
 
 	#clear stale quit sentinels from a previous session so the relaunch verification loop
 	#(see "Exit of (stale) ots..." at ~line 1231) doesn't bail before displayLogTail runs
-	echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE
+	#Note: only the local quit file; Macro Maker mode ignores the subsystem quit file and must not
+	#	write it (it belongs to the gateway of the normal mode system)
 	echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 
 	out #blank line
@@ -1534,10 +1543,22 @@ launchOTSMacromaker() {
 		exit
 	fi
 
-	if [[ "$1" = /* ]]; then #absolute path
-		export CONFIGURATION_INIT_FCL=$1
+	#remove invisible characters that come along when a command is copied from a web page or
+	#	document (non-breaking space, zero-width space, byte order mark, carriage return);
+	#	the shell keeps them as part of the filename and then the file can not be found
+	local macroMakerModeFclPath="$1"
+	macroMakerModeFclPath="${macroMakerModeFclPath//$'\xc2\xa0'/}" #non-breaking space
+	macroMakerModeFclPath="${macroMakerModeFclPath//$'\xe2\x80\x8b'/}" #zero-width space
+	macroMakerModeFclPath="${macroMakerModeFclPath//$'\xef\xbb\xbf'/}" #byte order mark
+	macroMakerModeFclPath="${macroMakerModeFclPath//$'\r'/}" #carriage return
+	if [[ "$macroMakerModeFclPath" != "$1" ]]; then
+		warning "Removed invisible characters (e.g. a non-breaking space) from the fcl file path parameter. This usually happens when the command is copied from a web page or document."
+	fi
+
+	if [[ "$macroMakerModeFclPath" = /* ]]; then #absolute path
+		export CONFIGURATION_INIT_FCL=$macroMakerModeFclPath
 	else
-		export CONFIGURATION_INIT_FCL="${PWD}/$1"
+		export CONFIGURATION_INIT_FCL="${PWD}/$macroMakerModeFclPath"
 	fi
 
 	out "CONFIGURATION_INIT_FCL = ${CONFIGURATION_INIT_FCL}"
@@ -5595,7 +5616,9 @@ otsActionHandler() {
 	if [[ ($ISCONFIG == 1) || ($ISMACROMAKER == 1) || ($ISACTIONONLY == 1) || ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
 		out "The script, on ${THIS_HOST}, is the gateway ots script, so it will drive the exit of ots scripts running on other hosts."
 
-		if [ $REMOTELAUNCH == 1 ]; then #only kill other ots scripts if remote launch was enabled
+		#Note: a Macro Maker mode session only owns its own host, so it never writes the subsystem
+		#	quit file (every node of the normal mode system obeys that file)
+		if [[ $REMOTELAUNCH == 1 && $ISMACROMAKER == 0 ]]; then #only kill other ots scripts if remote launch was enabled
 			echo "EXIT_LOOP" > $OTSDAQ_STARTOTS_QUIT_FILE
 		fi
 
@@ -5606,7 +5629,9 @@ otsActionHandler() {
 
 		#clear files initially
 		echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE
-		echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE
+		if [ $ISMACROMAKER == 0 ]; then
+			echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE
+		fi
 		echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 	else
 		sleep 10 #non gateways sleep for a while, to give time to quit stale scripts
@@ -5873,7 +5898,7 @@ otsActionHandler() {
 				DO_LOG_ROLLOVER=1
 			fi
 
-		elif [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0"  || "${OTSDAQ_STARTOTS_QUIT:-"0"}" != "0" ]]; then
+		elif [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0"  || ( "${OTSDAQ_STARTOTS_QUIT:-"0"}" != "0" && $ISMACROMAKER == 0 ) ]]; then #Macro Maker mode ignores the subsystem quit file
 
 			error "self-pid=${BASHPID}: Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT} (length=${#OTSDAQ_STARTOTS_ACTION})"
 			exit

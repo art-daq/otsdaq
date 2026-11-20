@@ -6,17 +6,42 @@ Start, Stop, ...), shows their status, and can relaunch them. Each instance has 
 `USER_DATA` (`Data_<name>`) and ports. All share one database, so the top level can read the
 satellites' Backbone aliases. Several instances can run from one lite area.
 
-Verified 2026-11-11 on the Sunrock lite area: `top` + satellite `sunrock` running side by side,
-top lists `sunrock`, gets its status ("Initial") and shows it in Subsystem Launch. The first
-relaunch failed because the path had no `user@host:` (fixed, path fetched over scp). Not yet verified:
-relaunch after the fix, the `sunrock` Desktop folder, Configure/Start of the satellite from top.
+Verified 2026-11-11 on a lite area: `top` + one satellite running side by side, top lists it, gets its
+status ("Initial") and shows it in Subsystem Launch. The first relaunch failed because the path had no
+`user@host:` (fixed, path fetched over scp).
+Verified 2026-11-19 on a full install (v3.12.00) with `top`, `sub1` and `sub2`: the folder of each satellite on
+the top-level Desktop, a satellite window opened from it, App Status, Subsystem Launch, and Configure and Start from
+the top level took both satellites to Running, each with its own alias. Not verified: relaunch of a satellite with
+`ssh -K`, satellites on another machine, lite. A working set can be loaded with
+`source reset_ots_tutorial.sh --tutorial subsystems` (the tutorial *Multiple Subsystems in otsdaq*).
+
+## What the top level and every satellite need (found 2026-11-19)
+
+- `GatewaySupervisorTable/Supervisor0/EnableApplicationStatusMonitoring=Yes` at the top level. Without it the
+  satellite Desktop folders are missing and its log says "Illegal missing remote icon definition".
+- `EnableStateChangesOverUDP=Yes` with `IPAddressForStateChangesOverUDP` and `PortForStateChangesOverUDP`, and
+  `EnableAckForStateChangesOverUDP=Yes`, in the top level **and** every satellite. Without the acknowledgement a
+  forwarded command times out after 10 s ("Failure sending Remote Gateway App ... Timeout (10 s)").
+- Ports that come from tables must differ by instance: the Gateway UDP port, the Console/MessageFacility
+  forwarding ports, and the data path of the Configuration group (the demonstration data listens on UDP 4005, so only
+  one instance can configure it: turn the DataManagerSupervisor and the front-end off in the others, or change the
+  ports). A clash shows as "Socket could not initialize socket ... Port=...".
+- A window opened from the top level gets `http://localhost:<main port>` from the `ots:127.0.0.1:...` icon. If the
+  servers do not listen on localhost, give the top level a port translation map (`OTS_PORT_TRANSLATION_MAP_FILE`).
+- `ots --wiz` of an instance needs its own port: `setup_ots_subsystems.sh` now also exports
+  `OTS_WIZ_MODE_MAIN_PORT` equal to the main port.
+- The demonstration waveform Visualizer (`RawDataVisualizerConsumer`) crashed Configure on a full install:
+  `VisualDataManager::configure` called `setDataManager` through `dynamic_cast<DQMHistosBase*>` without a null check.
+  Fixed 2026-11-19 (only DQM histogram consumers join the live list), verified live; a build without that fix needs the
+  Visualizer off in every instance.
 
 ## Example layout (one host)
 
 | Instance | USER_DATA | main port | ConfigGUI UDP | MacroMaker UDP | Gateway UDP | Console/MF UDP | Context |
 |----------|-----------|-----------|---------------|----------------|-------------|----------------|---------|
 | top | `Data_top` | 2115 | 2110 | 2111 | 2114 | 31000/31001 | `topContext` (FE off, satellite icon, Subsystem Launch) |
-| sunrock | `Data_sunrock` | 2015 | 2010 | 2011 | 2014 | 30000/30001 | `testContext`, Backbone `sunrockBackbone` (only `sunrockSystemAlias`) |
+| sub1 | `Data_sub1` | 2015 | 2010 | 2011 | 2014 | 30000/30001 | `sub1Context`, Backbone `sub1Backbone` (only `sub1SystemAlias`) |
+| sub2 | `Data_sub2` | 2215 | 2210 | 2211 | 2214 | 32000/32001 | `sub2Context`, Backbone `sub2Backbone` (only `sub2SystemAlias`), Configuration `sub2Config` |
 
 `ARTDAQ_DATABASE_URI` is the same for all. Activating a group writes only the edited instance's
 `$USER_DATA/ServiceData/ActiveTableGroups.cfg`, so each instance has its own active groups even
@@ -26,7 +51,7 @@ though they share one database.
 
 ```bash
 cd <lite-area>
-source setup_ots.sh sunrock && ots        # satellite (start it first, or top shows it failing until it is up)
+source setup_ots.sh sub1 && ots           # satellite (start it first, or top shows it failing until it is up)
 source setup_ots.sh top && ots            # top level; web: http://<host>:2115/urn:xdaq-application:lid=200/
 source setup_ots.sh top && echo Y | ots -k   # ots -k kills only processes of $USER_DATA/
 ```
@@ -78,11 +103,11 @@ alias). The gateway reads that file back at startup only when `EnableAckForState
 is set and `EnableStateChangesOverUDP` is not (`GatewaySupervisor.cc`, constructor). So for a
 top level with UDP state changes on, **every restart falls back to the first alias**.
 Seen: satellites copied from the demo share the Backbone with `defaultSystemAlias`, which sorts
-first, so top configured `sunrock` with the demo `defaultConfig`. The satellite then failed
+first, so top configured `sub1` with the demo `defaultConfig`. The satellite then failed
 loading `FEOtsUDPTemplateInterface` (`undefined symbol: typeinfo for ots::OtsUDPHardware` in this
 lite build). **Fix:** give each satellite its own Backbone that offers only its own aliases,
 activated only in the satellite:
-`cfg_udp_edit_group.sh -w -t Backbone -g sunrockBackbone -- -GroupAliasesTable/defaultSystemAlias`
+`cfg_udp_edit_group.sh -w -t Backbone -g sub1Backbone -- -GroupAliasesTable/defaultSystemAlias`
 (on the satellite's ConfigGUI UDP). Recover a Failed satellite with
 `ots_drive_udp_test <ip> <sat gateway UDP port> <fsm> Halt`.
 
@@ -122,16 +147,16 @@ What `top` ended up with (it took several groups, each fix found along the way: 
 ```bash
 source setup_ots.sh top
 cfg_udp_edit_group.sh -w -g topContext \
-  "new:SubsystemUserDataPathsTable=sunrock,Sunrock ASIC,asic@correlator4.fnal.gov:/data/fasic/asic/ots/Data_sunrock,Sunrock subsystem" \
+  "new:SubsystemUserDataPathsTable=sub1,Subsystem 1,username@yourhost:/path/to/ots/Data_sub1,First subsystem" \
   GatewaySupervisorTable/Supervisor0/PortForStateChangesOverUDP=2114 \
   MessageFacilityTable/MF_Entry/WebConsoleForwardingPort0=31000 \
   MessageFacilityTable/MF_Entry/WebConsoleForwardingPort1=31001 \
   MessageFacilityTable/MF_Entry/QTViewerForwardingPort=31000 \
   XDAQApplicationTable/FESupervisor/Status=Off \
-  +DesktopIconTable/sunrock DesktopIconTable/sunrock/Caption=Sunrock \
-  DesktopIconTable/sunrock/AlternateText=sunrock DesktopIconTable/sunrock/ImageURL=icon-Physics.gif \
-  DesktopIconTable/sunrock/FolderPath=sunrock \
-  "DesktopIconTable/sunrock/WindowContentURL=ots:127.0.0.1:2014?SetupType=sunrock"
+  +DesktopIconTable/sub1 DesktopIconTable/sub1/Caption="Subsystem 1" \
+  DesktopIconTable/sub1/AlternateText=sub1 DesktopIconTable/sub1/ImageURL=icon-Physics.gif \
+  DesktopIconTable/sub1/FolderPath=sub1 \
+  "DesktopIconTable/sub1/WindowContentURL=ots:127.0.0.1:2014?SetupType=sub1"
 add_desktop_icon.sh -w subsystemlaunch
 ```
 

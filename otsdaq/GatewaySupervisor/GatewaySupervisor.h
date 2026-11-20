@@ -83,6 +83,7 @@ class WorkLoopManager;
 		friend class Iterator;
 		friend class IteratorPluginVInterface;  ///< experiment Iterator plugins reach members through its forwarders
 
+		static const std::string APPS_STARTING_UP_STATUS; ///< status shown in place of Initial until every app has answered "are you ready?"
 		static const std::string COMMAND_PARAM_LOG_ENTRY_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE;
@@ -218,6 +219,10 @@ class WorkLoopManager;
 																						std::string logEntry = "");
 		void        					sendGetReadyForTransition						(const std::string& transitionName);
 		void        					sendStandDownForTransition						(const std::string& transitionName, bool transitionCompleted);
+		void        					startWaitForAllAppsToAnswer						(void);  ///< after a launch and at Startup: ask every app "are you ready?" every 2 s (no time limit) and show "Starting Up" in place of Initial until all have answered
+		void        					stopWaitForAllAppsToAnswer						(void);  ///< ends that wait (Shutdown, next Startup, or the user cancelling it)
+		bool        					isHoldingBackInitialStatus						(std::string* appsAnsweredPercent = nullptr, std::string* appsAnswerWaitReport = nullptr);
+		static void 					AppsAnswerWaitWorkLoop							(GatewaySupervisor* supervisorPtr, const unsigned int generation);
 		void        					throwIfSupervisorsWereNotReadyForTransition		(void);
 		void        					reportSupervisorsNotReadyForTransition			(void);
 		void        					broadcastMessage								(xoap::MessageReference msg);
@@ -551,6 +556,16 @@ public:	//used by remote subsystem control and status
 		///< backgroundWorkLoopGeneration_ no longer matches the generation it was started with.
 		std::atomic<unsigned int>							backgroundWorkLoopGeneration_{0};
 		std::thread											stateChangerThread_, appStatusThread_, appStatusDisconnectedThread_;
+
+		///< The wait for every app to answer "are you ready?" (see startWaitForAllAppsToAnswer()).
+		///< While waitingForAppsToAnswer_ is true and the state is Initial, the shown status is "Starting Up."
+		std::atomic<bool>									waitingForAppsToAnswer_{false};
+		std::atomic<unsigned int>							appsAnswerWaitGeneration_{0}; ///< the wait thread exits when this no longer matches the generation it was started with
+		std::atomic<unsigned int>							appsAnsweredPercent_{0};
+		std::thread											appsAnswerWaitThread_;
+		std::mutex											appsAnswerWaitControlMutex_; ///< one start or stop of the wait at a time
+		std::mutex											appsAnswerWaitReportMutex_;  ///< guards appsNotYetAnsweringReport_
+		std::string											appsNotYetAnsweringReport_;  ///< for the users: which apps have not answered yet
 
 		std::string											ipAddressForStateChangesOverUDP_; ///< IP used for UDP reverse-login propagation to remote gateways
 		int													portForReverseLoginOverUDP_ = 0;  ///< UDP port for reverse-login; 0 = disabled

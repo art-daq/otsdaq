@@ -118,7 +118,7 @@ class CoreSupervisorBase : public xdaq::Application,
 	///	and after 8 seconds refuses the transition and reports this supervisor to the user)
 	virtual bool 					isReadyForSystemTransition		(const std::string& /*transitionName*/, std::string& /*notReadyReason*/) { return true; }
 
-	static const std::string SYSTEM_TRANSITION_NOTICE_COMMAND, SYSTEM_TRANSITION_NOTICE_GET_READY, SYSTEM_TRANSITION_NOTICE_STAND_DOWN;
+	static const std::string SYSTEM_TRANSITION_NOTICE_COMMAND, SYSTEM_TRANSITION_NOTICE_GET_READY, SYSTEM_TRANSITION_NOTICE_STAND_DOWN, SYSTEM_TRANSITION_NOTICE_ARE_YOU_READY;
 
 	bool 							stateMachineThread				(toolbox::task::WorkLoop* workLoop);
 
