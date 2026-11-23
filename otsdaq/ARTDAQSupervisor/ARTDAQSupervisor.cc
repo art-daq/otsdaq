@@ -1640,6 +1640,18 @@ try
 	}
 	getDAQState_();
 	__SUP_COUT__ << "Status after stop: " << daqinterface_state_ << __E__;
+	// do_stop_running() swallows transition exceptions: it calls alert_and_recover(),
+	// which kills all artdaq processes and leaves DAQInterface in "stopped".
+	// Treat anything other than "ready" as a failed stop so the FSM goes to Failed
+	// instead of Configured with no artdaq processes behind it.
+	if(daqinterface_state_ != "ready")
+	{
+		__SS__ << "DAQInterface stop did not complete: state is '" << daqinterface_state_
+		       << "' (expected 'ready'). DAQInterface ran RECOVER and killed the artdaq "
+		          "processes; Halt and re-Configure before starting again."
+		       << __E__;
+		__SUP_SS_THROW__;
+	}
 	__SUP_COUT__ << "Stopped." << __E__;
 	set_thread_message_("Stopped");
 }  // end transitionStopping()
