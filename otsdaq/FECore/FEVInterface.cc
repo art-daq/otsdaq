@@ -471,6 +471,12 @@ try
 			if(!slowControlsWorkLoop_.getContinueWorkLoop())
 				break;
 
+			// a pause was requested (e.g. by start()) while in the middle of this
+			// channel scan: stop reading now, the front-end is about to be used by
+			// the state machine and two readers on one link get each other's answers
+			if(!slowControlsWorkLoopShouldRun_)
+				break;
+
 			// skip if no read access
 			if(!channel->readAccess_)
 				continue;
