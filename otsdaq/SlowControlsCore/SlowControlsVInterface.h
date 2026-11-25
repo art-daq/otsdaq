@@ -44,6 +44,13 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 	virtual std::string                                	getList(const std::string& format)       	= 0;
 	virtual std::array<std::string, 4>                 	getCurrentValue(const std::string& Name) 	= 0;
 	virtual std::vector<std::vector<std::string>> 	   	getChannelHistory(const std::string& Name, int startTime, int endTime)	= 0;
+	/// returns JSON object with the history of the channel in the time window [s since epoch], to be shown as a time chart:
+	///		points 				:= array of [time, value, minimum, maximum], oldest first
+	///		reducedToBuckets 	:= true if points are the mean (and minimum, maximum) of time buckets, i.e. there were too many samples
+	///		archiveProblem 		:= empty, or the reason why there are no points
+	///		units, lowLimit, highLimit := optional
+	///	Note: it can be called at any time, also while the plugin is busy (e.g., initializing), so it must not depend on the state of the other calls.
+	virtual std::string 								getChannelHistoryJSON(const std::string& /*Name*/, double /*startTime*/, double /*endTime*/) { return "{\"points\":[],\"reducedToBuckets\":false,\"archiveProblem\":\"channel history is not provided by the controls plugin\"}"; }
 	virtual std::vector<std::vector<std::string>>		getLastAlarms(const std::string& pvName)	= 0;
 	virtual std::vector<std::vector<std::string>>		getAlarmsLog(const std::string& pvName)		= 0;
 	virtual std::vector<std::vector<std::string>>		checkAlarmNotifications	(void)				= 0;
