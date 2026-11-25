@@ -31,6 +31,7 @@
 #include <cinttypes>  // PRIu64/SCNu64: uint64_t is not long on 32-bit ARM
 #include <sstream>
 
+#include <dirent.h>    // for opendir, readdir (find most recent FSM last alias file)
 #include <sys/stat.h>  // for mkdir
 #include <cctype>      // for std::isspace
 #include <chrono>      // std::chrono::seconds
@@ -6904,20 +6905,9 @@ try
 		__COUT__ << "Configure --> Name: ConfigurationAlias Value: " << configurationAlias
 		         << __E__;
 
-		// save last used config alias
-		std::string fn = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
-		                 FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
-		                 FSM_USERS_PREFERENCES_FILETYPE;
-
-		__COUT__ << "Save FSM preferences: " << fn << __E__;
-		FILE* fp = fopen(fn.c_str(), "w");
-		if(!fp)
-		{
-			__SS__ << ("Could not open file: " + fn) << __E__;
-			__SS_THROW__;
-		}
-		fprintf(fp, "FSM_last_configuration_alias %s", configurationAlias.c_str());
-		fclose(fp);
+		// save last used config alias (this is also the system-wide selected config alias
+		//	shown to all users for this run type)
+		setSelectedConfigAlias(fsmName, configurationAlias);
 
 		activeStateMachineName_       = fsmName;
 		activeStateMachineWindowName_ = fsmWindowName;
@@ -8644,6 +8634,23 @@ try
 		    true /* appendMode */,
 		    stateMachineTransitionUsername_);
 
+		// save run type (i.e., state machine name) with the last configured records
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineName_, TableGroupKey()),
+		    ConfigurationManager::LAST_CONFIGURED_RUN_TYPE_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineName_, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_RUN_TYPES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineName_, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_RUN_TYPES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
 		ConfigurationManager::saveGroupNameAndKey(
 		    theConfigurationTableGroup_,
 		    ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE,
@@ -9984,6 +9991,23 @@ try
 		ConfigurationManager::saveGroupNameAndKey(
 		    std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
 		    ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
+		// save run type (i.e., state machine name) with the last started records
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineName_, TableGroupKey()),
+		    ConfigurationManager::LAST_STARTED_RUN_TYPE_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineName_, TableGroupKey()),
+		    ConfigurationManager::STARTED_RUN_TYPES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineName_, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_RUN_TYPES_FILE,
 		    true /* appendMode */,
 		    stateMachineTransitionUsername_);
 
@@ -12744,7 +12768,7 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	CorePropertySupervisorBase::addSupervisorProperty(
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
 	    "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
-	    " | commandRemoteSubsystem");
+	    " | commandRemoteSubsystem | setSubsystemLaunchRunType | setSelectedConfigAlias");
 
 	CorePropertySupervisorBase::addSupervisorProperty(
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
@@ -12803,7 +12827,9 @@ try
 	// getStateMachine
 	// getStateMachineLastLogEntry
 	// stateMachinePreferences
-	// subsystemLaunchRunType		-- system-wide Subsystem Launch run type (FSM name), shared by all users
+	// subsystemLaunchRunType		-- system-wide run type (FSM name) of the Subsystem Launch and State Machine pages, shared by all users
+	// setSubsystemLaunchRunType	-- change the system-wide run type (user with the lock only)
+	// setSelectedConfigAlias		-- change the system-wide selected config alias of a run type (user with the lock only)
 	// getStateMachineNames
 	// getCurrentState
 	// cancelStateMachineTransition
@@ -12956,16 +12982,44 @@ try
 		}
 		else if(requestType == "subsystemLaunchRunType")
 		{
-			//system-wide run type (FSM name) for the Subsystem Launch page, shared by all users
-			std::string set = CgiDataUtilities::getData(cgiIn, "set");
-			if(set == "1")
-			{
-				std::string runType = CgiDataUtilities::getData(cgiIn, "runType");
-				__SUP_COUTV__(runType);
-				setSubsystemLaunchRunType(runType);
-			}
+			//system-wide run type (FSM name) selected in the Subsystem Launch and State Machine
+			//	pages, shared by all users (changed only with setSubsystemLaunchRunType)
 			xmlOut.addTextElementToData("subsystemLaunchRunType",
 			                            getSubsystemLaunchRunType());
+		}
+		else if(requestType == "setSubsystemLaunchRunType")
+		{
+			//only the user with the lock may change the shared run type
+			//	(enforced by RequireUserLockRequestTypes)
+			std::string runType = CgiDataUtilities::getData(cgiIn, "runType");
+			__SUP_COUT__ << "User '" << userInfo.username_
+			             << "' is setting the system-wide run type to '" << runType
+			             << "'" << __E__;
+			setSubsystemLaunchRunType(runType);
+			xmlOut.addTextElementToData("subsystemLaunchRunType",
+			                            getSubsystemLaunchRunType());
+		}
+		else if(requestType == "setSelectedConfigAlias")
+		{
+			//only the user with the lock may change the shared selected config alias
+			//	(enforced by RequireUserLockRequestTypes)
+			std::string fsmName     = CgiDataUtilities::getData(cgiIn, "fsmName");
+			std::string configAlias = StringMacros::decodeURIComponent(
+			    CgiDataUtilities::getData(cgiIn, "configAlias"));
+			__SUP_COUT__ << "User '" << userInfo.username_
+			             << "' is setting the system-wide selected config alias for run type '"
+			             << fsmName << "' to '" << configAlias << "'" << __E__;
+			if(fsmName == "" || configAlias == "")
+			{
+				__SUP_SS__ << "A run type and a config alias are required to set the "
+				              "selected config alias; received run type '"
+				           << fsmName << "' and config alias '" << configAlias << "'"
+				           << __E__;
+				__SUP_SS_THROW__;
+			}
+			setSelectedConfigAlias(fsmName, configAlias);
+			xmlOut.addTextElementToData("selectedConfigAlias",
+			                            getSelectedConfigAlias(fsmName));
 		}
 		else if(requestType == "getAliasList")
 		{
@@ -13154,21 +13208,12 @@ try
 					}
 				}
 
-				// return last group alias by user
-				std::string fn = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
-				                 FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
-				                 FSM_USERS_PREFERENCES_FILETYPE;
-				__COUT__ << "Load preferences: " << fn << __E__;
-				FILE* fp = fopen(fn.c_str(), "r");
-				if(fp)
-				{
-					char tmpLastAlias[500];
-					fscanf(fp, "%*s %s", tmpLastAlias);
-					__COUT__ << "tmpLastAlias: " << tmpLastAlias << __E__;
-
-					xmlOut.addTextElementToData("UserLastConfigAlias", tmpLastAlias);
-					fclose(fp);
-				}
+				// return the system-wide selected config alias for this run type
+				//	(the last selected by the user with the lock or the last used at Configure)
+				std::string selectedConfigAlias = getSelectedConfigAlias(fsmName);
+				if(selectedConfigAlias != "")
+					xmlOut.addTextElementToData("UserLastConfigAlias",
+					                            selectedConfigAlias);
 				else if(aliasMap.size())  //if not set, return first
 					xmlOut.addTextElementToData("UserLastConfigAlias",
 					                            aliasMap.begin()->first);
@@ -13800,6 +13845,14 @@ try
 		{
 			std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
 			addStateMachineStatusToXML(xmlOut, fsmName);
+
+			//system-wide run type, so every open State Machine page follows a change by the user with the lock
+			xmlOut.addTextElementToData("subsystemLaunchRunType",
+			                            getSubsystemLaunchRunType());
+			//system-wide selected config alias for this run type, followed the same way
+			if(fsmName != "")
+				xmlOut.addTextElementToData("selectedConfigAlias",
+				                            getSelectedConfigAlias(fsmName));
 		}
 		else if(requestType == "cancelStateMachineTransition")
 		{
@@ -14302,6 +14355,10 @@ try
 			//system-wide Subsystem Launch run type, so every open page follows a change by any user
 			xmlOut.addTextElementToData("subsystemLaunchRunType",
 			                            getSubsystemLaunchRunType());
+			//system-wide selected config alias for this run type, followed the same way
+			if(fsmName != "")
+				xmlOut.addTextElementToData("selectedConfigAlias",
+				                            getSelectedConfigAlias(fsmName));
 
 			{  //get system status
 
@@ -15841,21 +15898,11 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
 		}
 	}
 
-	// return last group alias by user
-	std::string fn = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
-	                 FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
-	                 FSM_USERS_PREFERENCES_FILETYPE;
-	__COUT__ << "Load preferences: " << fn << __E__;
-	FILE* fp = fopen(fn.c_str(), "r");
-	if(fp)
-	{
-		char tmpLastAlias[500];
-		fscanf(fp, "%*s %s", tmpLastAlias);
-		__COUT__ << "tmpLastAlias: " << tmpLastAlias << __E__;
-
-		xmlOut.addTextElementToData("UserLastConfigAlias", tmpLastAlias);
-		fclose(fp);
-	}
+	// return the system-wide selected config alias for this run type
+	//	(the last selected by the user with the lock or the last used at Configure)
+	std::string selectedConfigAlias = getSelectedConfigAlias(fsmName);
+	if(selectedConfigAlias != "")
+		xmlOut.addTextElementToData("UserLastConfigAlias", selectedConfigAlias);
 	else if(aliasMap.size())  //if not set, return first
 		xmlOut.addTextElementToData("UserLastConfigAlias", aliasMap.begin()->first);
 
@@ -17265,6 +17312,73 @@ std::string GatewaySupervisor::getSubsystemLaunchRunType()
 			std::getline(runTypeFile, subsystemLaunchRunType_);
 			runTypeFile.close();
 		}
+
+		if(subsystemLaunchRunType_ == "")
+		{
+			//no run type saved yet, so initialize to the last run type used at Configure:
+			//	the run type of the most recently written FSM last config alias file
+			//	(FSMLastGroupAlias-<run type>.pref is written at every accepted Configure)
+			const std::string lastAliasFileEnd =
+			    std::string(".") + FSM_USERS_PREFERENCES_FILETYPE;
+			time_t mostRecentModifiedTime = 0;
+			DIR*   lastAliasDirectory =
+			    opendir(ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH.c_str());
+			if(lastAliasDirectory)
+			{
+				struct dirent* directoryEntry;
+				while((directoryEntry = readdir(lastAliasDirectory)))
+				{
+					std::string entryName = directoryEntry->d_name;
+					if(entryName.size() <= FSM_LAST_GROUP_ALIAS_FILE_START.size() +
+					                           lastAliasFileEnd.size() ||
+					   entryName.find(FSM_LAST_GROUP_ALIAS_FILE_START) != 0 ||
+					   entryName.rfind(lastAliasFileEnd) !=
+					       entryName.size() - lastAliasFileEnd.size())
+						continue;  //not an FSM last config alias file
+
+					struct stat entryStatus;
+					if(stat((ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
+					         entryName)
+					            .c_str(),
+					        &entryStatus) != 0)
+						continue;
+
+					if(subsystemLaunchRunType_ == "" ||
+					   entryStatus.st_mtime > mostRecentModifiedTime)
+					{
+						mostRecentModifiedTime  = entryStatus.st_mtime;
+						subsystemLaunchRunType_ = entryName.substr(
+						    FSM_LAST_GROUP_ALIAS_FILE_START.size(),
+						    entryName.size() - FSM_LAST_GROUP_ALIAS_FILE_START.size() -
+						        lastAliasFileEnd.size());
+					}
+				}  //end directory entry loop
+				closedir(lastAliasDirectory);
+			}
+
+			if(subsystemLaunchRunType_ != "")
+			{
+				__SUP_COUT_INFO__ << "No Subsystem Launch run type was saved, so "
+				                     "initializing to the last run type used at Configure: '"
+				                  << subsystemLaunchRunType_ << "'" << __E__;
+				//save so the value no longer depends on the last config alias files
+				std::ofstream initialRunTypeFile(filepath.c_str());
+				if(initialRunTypeFile.is_open())
+				{
+					initialRunTypeFile << subsystemLaunchRunType_ << __E__;
+					initialRunTypeFile.close();
+				}
+				else
+					__SUP_COUT_WARN__ << "Could not save initial Subsystem Launch run type "
+					                     "to file: "
+					                  << filepath << __E__;
+			}
+			else
+				__SUP_COUT__ << "No Subsystem Launch run type was saved and no last "
+				                "Configure record was found; web pages will show the first "
+				                "run type in the list."
+				             << __E__;
+		}
 		__SUP_COUTV__(subsystemLaunchRunType_);
 	}
 	return subsystemLaunchRunType_;
@@ -17289,6 +17403,61 @@ void GatewaySupervisor::setSubsystemLaunchRunType(const std::string& runType)
 	runTypeFile.close();
 	__SUP_COUT__ << "Subsystem Launch run type set to '" << runType << "'" << __E__;
 }  // end setSubsystemLaunchRunType()
+
+//==============================================================================
+/// getSelectedConfigAlias
+///		Returns the system-wide selected config alias for the run type (FSM name), shared by all users.
+///		Loaded from the FSM last config alias file on first access, so the initial value is
+///		the last config alias selected or used at Configure for that run type.
+///		Returns empty string if there is no record yet.
+std::string GatewaySupervisor::getSelectedConfigAlias(const std::string& fsmName)
+{
+	std::lock_guard<std::mutex> lock(selectedConfigAliasMutex_);
+	auto selectedConfigAliasIt = selectedConfigAliases_.find(fsmName);
+	if(selectedConfigAliasIt != selectedConfigAliases_.end())
+		return selectedConfigAliasIt->second;
+
+	std::string filepath = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
+	                       FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
+	                       FSM_USERS_PREFERENCES_FILETYPE;
+	__SUP_COUT__ << "Load selected config alias: " << filepath << __E__;
+	std::string   fieldName, selectedConfigAlias;
+	std::ifstream selectedConfigAliasFile(filepath.c_str());
+	if(selectedConfigAliasFile.is_open())
+	{
+		selectedConfigAliasFile >> fieldName >> selectedConfigAlias;
+		selectedConfigAliasFile.close();
+	}
+	__SUP_COUTV__(selectedConfigAlias);
+
+	selectedConfigAliases_[fsmName] = selectedConfigAlias;
+	return selectedConfigAlias;
+}  // end getSelectedConfigAlias()
+
+//==============================================================================
+/// setSelectedConfigAlias
+///		Sets the system-wide selected config alias for the run type (FSM name), and saves it
+///		to the FSM last config alias file so it survives Gateway restarts.
+void GatewaySupervisor::setSelectedConfigAlias(const std::string& fsmName,
+                                               const std::string& configAlias)
+{
+	std::lock_guard<std::mutex> lock(selectedConfigAliasMutex_);
+
+	std::string filepath = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
+	                       FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
+	                       FSM_USERS_PREFERENCES_FILETYPE;
+	__SUP_COUT__ << "Save selected config alias: " << filepath << __E__;
+	std::ofstream selectedConfigAliasFile(filepath.c_str());
+	if(!selectedConfigAliasFile.is_open())
+	{
+		__SUP_SS__ << "Could not open file: " << filepath << __E__;
+		__SUP_SS_THROW__;
+	}
+	selectedConfigAliasFile << "FSM_last_configuration_alias " << configAlias;
+	selectedConfigAliasFile.close();
+
+	selectedConfigAliases_[fsmName] = configAlias;
+}  // end setSelectedConfigAlias()
 
 //==============================================================================
 /// translateURLForRequestOrigin

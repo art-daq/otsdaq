@@ -109,6 +109,12 @@ class ConfigurationManager
 	static const std::string CONFIGURED_OR_STARTED_BACKBONES_FILE;
 	static const std::string CONFIGURED_OR_STARTED_ITERATES_FILE;
 
+	static const std::string LAST_CONFIGURED_RUN_TYPE_FILE;
+	static const std::string LAST_STARTED_RUN_TYPE_FILE;
+	static const std::string CONFIGURED_RUN_TYPES_FILE;
+	static const std::string STARTED_RUN_TYPES_FILE;
+	static const std::string CONFIGURED_OR_STARTED_RUN_TYPES_FILE;
+
 	static const uint8_t METADATA_COL_ALIASES;
 	static const uint8_t METADATA_COL_COMMENT;
 	static const uint8_t METADATA_COL_AUTHOR;

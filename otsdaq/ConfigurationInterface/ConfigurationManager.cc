@@ -72,6 +72,13 @@ const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_CONTEXTS_FILE 		
 const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_BACKBONES_FILE 			= "CFGConfiguredOrStartedBackboneGroups.hist";
 const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_ITERATES_FILE 			= "CFGConfiguredOrStartedIterateGroups.hist";
 
+// Run Type (i.e., state machine name) records use the same file format as the group records (the group key is not used)
+const std::string 		ConfigurationManager::LAST_CONFIGURED_RUN_TYPE_FILE 				= "CFGLastConfiguredRunType.hist";
+const std::string 		ConfigurationManager::LAST_STARTED_RUN_TYPE_FILE 					= "CFGLastStartedRunType.hist";
+const std::string 		ConfigurationManager::CONFIGURED_RUN_TYPES_FILE 					= "CFGConfiguredRunTypes.hist";
+const std::string 		ConfigurationManager::STARTED_RUN_TYPES_FILE 						= "CFGStartedRunTypes.hist";
+const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_RUN_TYPES_FILE 			= "CFGConfiguredOrStartedRunTypes.hist";
+
 
 const std::string 		ConfigurationManager::READONLY_USER 						= "READONLY_USER";
 
@@ -5679,6 +5686,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 			fullPath += ConfigurationManager::CONFIGURED_ITERATES_FILE;
 		else if(groupType == "Config Alias")
 			fullPath += ConfigurationManager::CONFIGURED_CONFIG_ALIASES_FILE;
+		else if(groupType == "Run Type")
+			fullPath += ConfigurationManager::CONFIGURED_RUN_TYPES_FILE;
 	}
 	else if(groupAction == "Started")
 	{
@@ -5692,6 +5701,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 			fullPath += ConfigurationManager::STARTED_ITERATES_FILE;
 		else if(groupType == "Config Alias")
 			fullPath += ConfigurationManager::STARTED_CONFIG_ALIASES_FILE;
+		else if(groupType == "Run Type")
+			fullPath += ConfigurationManager::STARTED_RUN_TYPES_FILE;
 	}
 	else if(groupAction == "Configured or Started")
 	{
@@ -5705,6 +5716,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 			fullPath += ConfigurationManager::CONFIGURED_OR_STARTED_ITERATES_FILE;
 		else if(groupType == "Config Alias")
 			fullPath += ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE;
+		else if(groupType == "Run Type")
+			fullPath += ConfigurationManager::CONFIGURED_OR_STARTED_RUN_TYPES_FILE;
 	}
 
 	if(fullPath == ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/")

@@ -594,8 +594,12 @@ public:	//used by remote subsystem control and status
 		std::string					getSubsystemLaunchRunType					(void);
 		void						setSubsystemLaunchRunType					(const std::string& runType);
 		std::mutex					subsystemLaunchRunTypeMutex_;
-		std::string					subsystemLaunchRunType_; ///< system-wide (shared by all users) FSM name selected in the Subsystem Launch page, persisted under SERVICE_DATA_PATH
+		std::string					subsystemLaunchRunType_; ///< system-wide (shared by all users) FSM name selected in the Subsystem Launch and State Machine pages (changed only by the user with the lock), persisted under SERVICE_DATA_PATH
 		bool						subsystemLaunchRunTypeLoaded_ = false;
+		std::string					getSelectedConfigAlias						(const std::string& fsmName);
+		void						setSelectedConfigAlias						(const std::string& fsmName, const std::string& configAlias);
+		std::mutex					selectedConfigAliasMutex_;
+		std::map<std::string /*fsmName*/, std::string /*configAlias*/>	selectedConfigAliases_; ///< system-wide (shared by all users) config alias selected for each run type in the Subsystem Launch and State Machine pages (changed only by the user with the lock, or by a Configure), persisted in the FSM last config alias files
 		static std::string			translateURLForRequestOrigin				(const std::string& url, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
 		static std::string			translateRemoteIconStringForRequestOrigin	(const std::string& iconString, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
 

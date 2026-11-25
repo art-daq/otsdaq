@@ -1,6 +1,16 @@
 #!/bin/bash
 # Source this to get color code variables to use during output
 
+# Spack 1.1 (the artdaq/Spack1.1 spack-mpd) has no 'spack mpd build -G <generator>': the generator is chosen once when the
+# project is created (generator=ninja). Older Spack (0.28 area) still needs '-G Ninja'. The version is the first word of
+# 'spack --version', e.g. "1.1.0 (<commit>)" versus "1.0.0.dev0 (<commit>)".
+ots_spack_is_1_1() {
+	[[ "$(spack --version 2>/dev/null)" == 1.1.* ]]
+}
+ots_mpd_generator_option() {
+	if ots_spack_is_1_1; then echo ""; else echo "-G Ninja"; fi
+}
+
 # setup compile aliases (for more spack debug info, use spack -d install -j$CETPKG_J 2>&1)
 #============================
 lockfile="/tmp/ots_compile_${OTS_SOURCE//\//_}.lock"
@@ -48,7 +58,7 @@ mb() {
 	temp_file=$(mktemp)
 
 	# Run spack mpd build with tee to process output via sed, display, and save to a temp file
-	stdbuf -oL spack mpd build -G Ninja -j$CETPKG_J 2>&1 | \
+	stdbuf -oL spack mpd build $(ots_mpd_generator_option) -j$CETPKG_J 2>&1 | \
 		tee >(sed s/$escaped_srcs//g | \
 			   sed s/__spack_path_placeholder__//g | \
 			   sed s/\\\[padded-to-255-chars\\\]//g | \
@@ -115,7 +125,7 @@ ml() {
 	temp_file=".ml_log.txt"
 
 	# Run spack mpd build with tee to process output via sed, display, and save to a temp file
-	stdbuf -oL spack mpd build -G Ninja -j$CETPKG_J 2>&1 | \
+	stdbuf -oL spack mpd build $(ots_mpd_generator_option) -j$CETPKG_J 2>&1 | \
 		tee >(sed s/$escaped_srcs//g | \
 			   sed s/__spack_path_placeholder__//g | \
 			   sed s/\\\[padded-to-255-chars\\\]//g | \
@@ -176,7 +186,7 @@ mz() {
 	temp_file=$(mktemp)
 
 	# Run spack mpd build with tee to process output via sed, display, and save to a temp file
-	stdbuf -oL spack mpd build -G Ninja --clean -j$CETPKG_J 2>&1 | \
+	stdbuf -oL spack mpd build $(ots_mpd_generator_option) --clean -j$CETPKG_J 2>&1 | \
 		tee >(sed s/$escaped_srcs//g | \
 			   sed s/__spack_path_placeholder__//g | \
 			   sed s/\\\[padded-to-255-chars\\\]//g | \
@@ -226,16 +236,28 @@ mz_uc() {
 	echo "May work better in a new terminal!"
 	spack env deactivate
 
-	if spack mpd select tdaq-develop 2>/dev/null; then
+	# Spack 1.1 selects a project by its top-level directory (the area) and keeps the selection per working directory,
+	# so stay in the area for the whole sequence; older Spack selects by project name
+	local startDirectory="$PWD"
+	if ots_spack_is_1_1; then
+		cd "$Base" && spack mpd select . 2>/dev/null; mpd_select_status=$?
+	else
+		spack mpd select tdaq-develop 2>/dev/null; mpd_select_status=$?
+	fi
+	if [ $mpd_select_status -eq 0 ]; then
 		echo "tdaq-develop activated."
 	else
 		echo "Failed to activate tdaq-develop!"
+		cd "$startDirectory"
 		return 1
 	fi
 
 	spack mpd refresh --force && \
 	spack env activate tdaq-develop && \
 	mz
+	local mzUcStatus=$?
+	cd "$startDirectory"
+	return $mzUcStatus
 } #end mz_uc
 export -f mz_uc
 # alias mz_uc='(echo "must be in new terminal!" || spack env deactivate) || (spack mpd select tdaq-develop && spack mpd refresh && spack env activate tdaq-develop && mz)'

@@ -10,6 +10,45 @@ export OTS_MACROMAKER_UDP_PORT=2011
 export OTS_MACROMAKER_UDP_IP=127.0.0.1
 ```
 
+## Starting Macro Maker mode (no configuration, no State Machine)
+
+`ots -mm <file.fcl>` (or `--macromaker`) stops the other ots processes of the install and starts Macro Maker mode: only the
+Macro Maker, FE Macros and Code Editor apps, and the front-ends named in the FHiCL file. Set the two UDP variables above
+**before** the launch, or only a warning is printed. Verified 2026-11-20 on a full install with the demo emulator on port 4000
+(`ots_udp_hw_emulator 4000 &`):
+
+```bash
+cat > my_first_mm.fcl <<'EOF'
+interface0: {
+	FEInterfacePluginName: "FEOtsUDPTemplateInterface"
+	LinkToFETypeTable_FEOtsUDPTemplateInterfaceTable: {
+		OtsInterface0: {
+			InterfaceIPAddress: "127.0.0.1"
+			InterfacePort: 4000
+			HostIPAddress: "127.0.0.1"
+			HostPort: 4001
+			StreamToIPAddress: "127.0.0.1"
+			StreamToPort: 4005
+		}
+	}
+}
+EOF
+export OTS_MACROMAKER_UDP_IP=127.0.0.1 OTS_MACROMAKER_UDP_PORT=2011
+ots -mm my_first_mm.fcl
+ots_mm_udp_test $OTS_MACROMAKER_UDP_IP $OTS_MACROMAKER_UDP_PORT interface0 r 0x1002
+```
+
+- The block name (`interface0`) is the front-end UID. The link block is `<link column>_<table name>`, then the record UID, then its
+  fields: the same names as in the Tree-view of the Configure app. `FirmwareVersion` can be left out; **all six address fields
+  must be there**, or the launch fails after 3 attempts with `Socket.cc ... Invalid IP:Port combination ... DEFAULT:0` (the log is
+  `$USER_DATA/Logs/otsdaq_quiet_run-mm-<host>.txt`).
+- **Every Configure** of a normal mode system writes `$USER_DATA/MacroMakerModeConfigurations/MacroMakerModeFhiclDump.fcl` with the
+  front-ends that are On (`ConfigurationManager::dumpMacroMakerModeFhicl`, called by the Gateway). Use it with
+  `ots -mm $USER_DATA/MacroMakerModeConfigurations/MacroMakerModeFhiclDump.fcl`; copy it first, the next Configure overwrites it.
+- The path is not expanded by ots: in single quotes `$USER_DATA` stays as typed and the launch fails with
+  `Failed to instantiate application class 'ots::FESupervisor'`. Read the line `CONFIGURATION_INIT_FCL = ...` of the output.
+- Tutorial: *Macro Maker Mode* on https://otsdaq.fnal.gov/tutorials/macromaker-mode.html
+
 ## CLI Tool: ots_mm_udp_test
 
 ### List front-ends
