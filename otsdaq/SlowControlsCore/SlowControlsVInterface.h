@@ -44,6 +44,24 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 	virtual std::string                                	getList(const std::string& format)       	= 0;
 	virtual std::array<std::string, 4>                 	getCurrentValue(const std::string& Name) 	= 0;
 	virtual std::vector<std::vector<std::string>> 	   	getChannelHistory(const std::string& Name, int startTime, int endTime)	= 0;
+	/// returns JSON object with the history of the channel in the time window [s since epoch], to be shown as a time chart:
+	///		points 				:= array of [time, value, minimum, maximum], oldest first
+	///		reducedToBuckets 	:= true if points are the mean (and minimum, maximum) of time buckets, i.e. there were too many samples
+	///		archiveProblem 		:= empty, or the reason why there are no points
+	///		units, lowLimit, highLimit := optional
+	///	Note: it can be called at any time, also while the plugin is busy (e.g., initializing), so it must not depend on the state of the other calls.
+	virtual std::string 								getChannelHistoryJSON(const std::string& /*Name*/, double /*startTime*/, double /*endTime*/) { return "{\"points\":[],\"reducedToBuckets\":false,\"archiveProblem\":\"channel history is not provided by the controls plugin\"}"; }
+	/// returns JSON object with the most recent entries (newest first) of the alarm history, to be shown as a table:
+	///		type 				:= commands (e.g., acknowledge), states (alarm state changes) or configs (alarm configuration changes)
+	///		columns 			:= array of column names; the columns time and alarmTime are [s since epoch], the others are strings
+	///		rows 				:= array of rows, each an array with one value per column
+	///		problem 			:= empty, or the reason why there are no rows
+	///	Only the entries that contain filter (case insensitive) are returned, at most maxRows.
+	///	Note: it can be called at any time, also while the plugin is busy (e.g., initializing), so it must not depend on the state of the other calls.
+	virtual std::string 								getAlarmHistoryJSON(const std::string& /*type*/, const std::string& /*filter*/, size_t /*maxRows*/) { return "{\"columns\":[],\"rows\":[],\"problem\":\"alarm history is not provided by the controls plugin\"}"; }
+	/// Writes value to the channel, without waiting for its effect. Returns an empty string, or the reason why the value was not written.
+	///	Note: the caller decides which user may write which value to which channel, see SlowControlsDashboardSupervisor::SetChannelValues().
+	virtual std::string 								setChannelValue(const std::string& /*channelName*/, const std::string& /*value*/) { return "writing channels is not provided by the controls plugin"; }
 	virtual std::vector<std::vector<std::string>>		getLastAlarms(const std::string& pvName)	= 0;
 	virtual std::vector<std::vector<std::string>>		getAlarmsLog(const std::string& pvName)		= 0;
 	virtual std::vector<std::vector<std::string>>		checkAlarmNotifications	(void)				= 0;
