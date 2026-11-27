@@ -51,6 +51,14 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 	///		units, lowLimit, highLimit := optional
 	///	Note: it can be called at any time, also while the plugin is busy (e.g., initializing), so it must not depend on the state of the other calls.
 	virtual std::string 								getChannelHistoryJSON(const std::string& /*Name*/, double /*startTime*/, double /*endTime*/) { return "{\"points\":[],\"reducedToBuckets\":false,\"archiveProblem\":\"channel history is not provided by the controls plugin\"}"; }
+	/// returns JSON object with the most recent entries (newest first) of the alarm history, to be shown as a table:
+	///		type 				:= commands (e.g., acknowledge), states (alarm state changes) or configs (alarm configuration changes)
+	///		columns 			:= array of column names; the columns time and alarmTime are [s since epoch], the others are strings
+	///		rows 				:= array of rows, each an array with one value per column
+	///		problem 			:= empty, or the reason why there are no rows
+	///	Only the entries that contain filter (case insensitive) are returned, at most maxRows.
+	///	Note: it can be called at any time, also while the plugin is busy (e.g., initializing), so it must not depend on the state of the other calls.
+	virtual std::string 								getAlarmHistoryJSON(const std::string& /*type*/, const std::string& /*filter*/, size_t /*maxRows*/) { return "{\"columns\":[],\"rows\":[],\"problem\":\"alarm history is not provided by the controls plugin\"}"; }
 	virtual std::vector<std::vector<std::string>>		getLastAlarms(const std::string& pvName)	= 0;
 	virtual std::vector<std::vector<std::string>>		getAlarmsLog(const std::string& pvName)		= 0;
 	virtual std::vector<std::vector<std::string>>		checkAlarmNotifications	(void)				= 0;
