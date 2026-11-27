@@ -59,6 +59,9 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 	///	Only the entries that contain filter (case insensitive) are returned, at most maxRows.
 	///	Note: it can be called at any time, also while the plugin is busy (e.g., initializing), so it must not depend on the state of the other calls.
 	virtual std::string 								getAlarmHistoryJSON(const std::string& /*type*/, const std::string& /*filter*/, size_t /*maxRows*/) { return "{\"columns\":[],\"rows\":[],\"problem\":\"alarm history is not provided by the controls plugin\"}"; }
+	/// Writes value to the channel, without waiting for its effect. Returns an empty string, or the reason why the value was not written.
+	///	Note: the caller decides which user may write which value to which channel, see SlowControlsDashboardSupervisor::SetChannelValues().
+	virtual std::string 								setChannelValue(const std::string& /*channelName*/, const std::string& /*value*/) { return "writing channels is not provided by the controls plugin"; }
 	virtual std::vector<std::vector<std::string>>		getLastAlarms(const std::string& pvName)	= 0;
 	virtual std::vector<std::vector<std::string>>		getAlarmsLog(const std::string& pvName)		= 0;
 	virtual std::vector<std::vector<std::string>>		checkAlarmNotifications	(void)				= 0;
